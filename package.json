@@ -1,0 +1,24 @@
+{
+  "name": "theta-guardian-web-server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "await-spawn": "^4.0.1",
+    "express": "^4.17.1",
+    "express-static-gzip": "^2.1.1",
+    "find-process": "^1.4.4",
+    "got": "^11.8.2",
+    "passport-auth0": "^1.4.0",
+    "rotating-file-stream": "^2.1.5",
+    "stream-stream": "^1.2.6"
+  },
+  "devDependencies": {
+    "dateformat": "^4.5.1"
+  }
+}
