@@ -1,5 +1,6 @@
 const Glue = require('@hapi/glue');
 const Path = require('path');
+const Sequelize = require('sequelize');
 
 // Server port
 const HTTP_PORT = process.env.PORT || 8000;
@@ -17,6 +18,22 @@ const manifest = {
     "register": {
         "plugins": [
             '@hapi/inert',
+            '@hapi/bell',
+            '@hapi/cookie',
+            {
+                plugin: require('hapi-sequelizejs'),
+                options: [
+                    {
+                        name: 'thetaboard', // identifier
+                        models: [__dirname + '/models/**/*.js'], // paths/globs to model files
+                        sequelize: new Sequelize('thetaboard', 'root', 'mypass', { // TODO secure pwd
+                            host: 'localhost',
+                            dialect:  'mariadb'
+                        }), // sequelize instance
+                        sync: true, // sync models - default false
+                    },
+                ],
+            },
             {
                 plugin: './explorer',
                 routes: {
@@ -27,6 +44,18 @@ const manifest = {
                 plugin: './guardian',
                 routes: {
                     prefix: '/guardian'
+                }
+            },
+            {
+                plugin: './auth',
+                routes: {
+                    prefix: '/auth'
+                }
+            },
+            {
+                plugin: './user',
+                routes: {
+                    prefix: '/user'
                 }
             }
         ]
@@ -39,6 +68,7 @@ const options = {
 
 const init = async () => {
     const server = await Glue.compose(manifest, options);
+
 
     // TODO: these routes probably shouldn't be there
     // isPublic
