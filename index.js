@@ -17,15 +17,17 @@ const manifest = {
     },
     "register": {
         "plugins": [
-            '@hapi/inert',
-            '@hapi/bell',
-            '@hapi/cookie',
+            '@hapi/inert', // static files
+            '@hapi/bell', // oauth with third party
+            '@hapi/cookie', //session in cookies
+            '@hapi/jwt', // auth with jwt,
             {
                 plugin: require('hapi-sequelizejs'),
                 options: [
                     {
                         name: 'thetaboard', // identifier
                         models: [__dirname + '/models/**/*.js'], // paths/globs to model files
+                        ignoredModels: [__dirname + '/models/index.js'], // OPTIONAL: paths/globs to ignore files
                         sequelize: new Sequelize('thetaboard', 'root', 'mypass', { // TODO secure pwd
                             host: 'localhost',
                             dialect:  'mariadb'
