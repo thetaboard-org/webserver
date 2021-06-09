@@ -1,4 +1,8 @@
 const bcrypt = require('bcrypt');
+const Boom = require('@hapi/boom')
+const email = require('../utils/email')
+const jwt = require('../utils/jwt')
+
 const saltRounds = 10;
 
 const user = function (server, options, next) {
@@ -18,25 +22,24 @@ const user = function (server, options, next) {
                 user.password = await bcrypt.hash(req.payload.user.password, saltRounds);
                 try {
                     const saved = await user.save();
+                    email.sentMailVerificationLink(user, jwt.createToken(saved));
                     return {'success': true};
                 } catch (e) {
-                    return e.errors
+                    return Boom.badRequest(e);
                 }
             }
         },
         {
-            method: 'get',
-            path: '/only_logged',
+            path: '/verify_email',
+            method: 'GET',
             options: {
                 auth: {
                     strategy: 'token',
                 },
-                handler: async (req, h) => {
-                    const user = await req.getModel('User').build(req.payload.user);
-                    const myPlaintextPassword = 'lol';
-                    const password = await bcrypt.hash(myPlaintextPassword, saltRounds);
-                    const is_same = bcrypt.compare(myPlaintextPassword)
-                    return user.save()
+                handler: async function (request, h) {
+                    const user = await request.getModel('User').findOne({where: {'email': request.auth.credentials.email}});
+                    user.isVerified = true;
+                    return user;
                 }
             }
         },
