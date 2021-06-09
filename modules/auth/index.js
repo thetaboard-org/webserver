@@ -1,47 +1,8 @@
-const Moment = require('moment');
-const Jwt = require('@hapi/jwt');
 const bcrypt = require("bcrypt");
+const Boom = require('@hapi/boom')
 
-const TTL = 60 * 60 * 24; //24hours
-
-
-const validate = (artifacts, request, h) => {
-    // Check token timestamp
-    const diff = Moment().diff(Moment(artifacts.decoded.payload.exp * 1000));
-    if (diff < 0) { //check how long is left on the token
-        return {
-            isValid: true,
-            credentials: {userName: artifacts.decoded.payload.user}
-        };
-    }else{
-        return {
-            isValid: false
-        };
-    }
-};
-
-
-/**
- * @param {*} user
- */
-function createToken(user) {
-    //TODO add scope to it
-    return Jwt.token.generate(
-        {
-            aud: 'urn:audience:thetaboard_user',
-            iss: 'urn:issuer:thetaboard',
-            user: user.userName,
-        },
-        {
-            key: 'random_key', //TODO add to config
-            algorithm: 'HS512'
-        },
-        {
-            ttlSec: TTL
-        }
-    );
-
-}
+const secrets = require("../../config/secrets.json")
+const jwt = require("../utils/jwt")
 
 const auth = function (server, options, next) {
     /**
@@ -49,22 +10,22 @@ const auth = function (server, options, next) {
      */
     server.auth.strategy('google', 'bell', {
         provider: 'google',
-        password: 'cookie_encryption_password_secure',
+        password: secrets.google.password,
         isSecure: process.env.NODE_ENV === 'production',
-        clientId: '1012666492630-k6173ufjl9iucaku8hvdnf44ubhrpvk1.apps.googleusercontent.com',
-        clientSecret: 'vvPAYlblV3B02qTvNAPLIYas', //TODO: add to config file,
+        clientId: secrets.google.clientId,
+        clientSecret: secrets.google.clientSecret,
         location: process.env.NODE_ENV === 'production' ? 'https://thetaboard.io' : 'http://localhost:8000'
     });
 
     // JWT strategy
     server.auth.strategy('token', 'jwt', {
-        validate: validate,
+        validate: jwt.validate,
         verify: {
             aud: 'urn:audience:thetaboard_user',
             iss: 'urn:issuer:thetaboard',
             sub: false,
         },
-        keys: "random_key", //TODO: add private key,
+        keys: secrets.jwt.secret_key,
 
     });
 
@@ -73,34 +34,20 @@ const auth = function (server, options, next) {
         path: '/login',
         options: {
             handler: async function (request, h) {
-                const user = await request.getModel('User').findOne({where: {'userName': request.payload.userName}});
-                if (!user) {
-                    return {'success': false, error: "UserName does not exists"}
-                }
-                const isSame = await bcrypt.compare(request.payload.password, user.password);
-                if (!isSame) {
-                    return {'success': false, error: "Wrong password"}
-                }
-                return {'success': true, "token": createToken(user)}
-            }
-        }
-    });
-
-    server.route({
-        method: 'GET',
-        path: '/google',
-        options: {
-            auth: {
-                strategy: 'google',
-                mode: 'try'
-            },
-            handler: function (request, h) {
-
-                if (!request.auth.isAuthenticated) {
-                    return 'Authentication failed due to: ' + request.auth.error.message;
+                try {
+                    const user = await request.getModel('User').findOne({where: {'email': request.payload.email}});
+                    if (!user) {
+                        throw "Email does not exists";
+                    }
+                    const isSame = await bcrypt.compare(request.payload.password, user.password);
+                    if (!isSame) {
+                        throw "Wrong password";
+                    }
+                    return {"id_token": jwt.createToken(user)}
+                } catch (error) {
+                    return Boom.badRequest(error);
                 }
 
-                return '<pre>' + JSON.stringify(request.auth.credentials, null, 4) + '</pre>';
             }
         }
     });
@@ -113,11 +60,8 @@ const auth = function (server, options, next) {
                 strategy: 'token',
             },
             handler: function (request, h) {
-                if (!request.auth.isAuthenticated) {
-                    return 'None'
-                } else {
-                    return "yes"
-                }
+                return "yes"
+
             }
         }
     });

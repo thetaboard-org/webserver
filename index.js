@@ -29,8 +29,8 @@ const manifest = {
                         models: [__dirname + '/models/**/*.js'], // paths/globs to model files
                         ignoredModels: [__dirname + '/models/index.js'], // OPTIONAL: paths/globs to ignore files
                         sequelize: new Sequelize('thetaboard', 'root', 'mypass', { // TODO secure pwd
-                            host: 'localhost',
-                            dialect:  'mariadb'
+                            host: process.env.DATABASE_HOST ? process.env.DATABASE_HOST : '127.0.0.1',
+                            dialect: 'mariadb'
                         }), // sequelize instance
                         sync: true, // sync models - default false
                     },
