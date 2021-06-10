@@ -57,7 +57,7 @@ const manifest = {
             {
                 plugin: './user',
                 routes: {
-                    prefix: '/user'
+                    prefix: '/users'
                 }
             }
         ]

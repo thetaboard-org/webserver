@@ -8,7 +8,7 @@ exports.sentMailVerificationLink = function (user, token) {
     const from = `Thetaboard Team < ${Config.email.username} > `;
     const mailbody = ` <p> Thanks for Registering on Thetaboard </p>
                         <p>Please verify your email by clicking on the verification link below.<br/>
-                            <a href='http://localhost:8000/verify_email/${token}'>Verification Link</a>
+                            <a href='http://localhost:8080/verify/${token}'>Verification Link</a>
                         </p>`;
     mail(from, user.email, "Account Verification", mailbody);
 };
