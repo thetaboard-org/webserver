@@ -14,11 +14,13 @@ exports.sentMailVerificationLink = function (user, token) {
 };
 
 
-exports.sentMailForgotPassword = function (user) {
+exports.sentMailForgotPassword = function (user, token) {
     const from = ` Thetaboard Team < ${Config.email.username} > `;
-    const tmp_pwd = 'test';
-    const mailbody = `<p>Your ${user.email} Account Credential temporary password is: ${tmp_pwd}`
-    mail(from, user.email, "Account password", mailbody);
+    const mailbody = `<p>You requested a reset password.</p>
+        <p>Please use the following link to reset your password.<br/>
+        <a href='http://localhost:8080/passwordreset/${token}'>Reset password</a>
+        </p>`;
+    mail(from, user.email, "Reset password", mailbody);
 };
 
 function mail(from, email, subject, mailbody) {
