@@ -46,6 +46,40 @@ const user = function (server, options, next) {
             }
         },
         {
+            method: 'POST',
+            path: '/send_email_verification',
+            options: {
+                auth: {
+                    strategy: 'token',
+                },
+                handler: async (req, h) => {
+                    try {
+                        const user = await req.getModel('User').findOne({where: {'email': req.auth.credentials.email}});
+                        if (!user) {
+                            throw "Email address not registered";
+                        }
+                        email.sentMailVerificationLink(user, jwt.createToken(user));
+                        const response = {
+                            data: {
+                                id: user.id,
+                                type: 'user',
+                                attributes: {
+                                    email: user.email,
+                                    "is-verified": user.isVerified
+                                }
+                            }
+                        }
+                        return response;
+                    } catch (e) {
+                        if (e && e.errors) {
+                            e = e.errors[0].message;
+                        }
+                        return Boom.badRequest(e);
+                    }
+                }
+            }
+        },
+        {
             path: '/verify_email',
             method: 'GET',
             options: {
@@ -53,20 +87,90 @@ const user = function (server, options, next) {
                     strategy: 'token',
                 },
                 handler: async function (request, h) {
-                    const user = await request.getModel('User').findOne({where: {'email': request.auth.credentials.email}});
-                    user.isVerified = true;
-                    const saved = await user.save();
-                    const response = {
-                        data: {
-                            id: saved.id,
-                            type: 'user',
-                            attributes: {
-                                email: saved.email,
-                                "is-verified": saved.isVerified
+                    try {
+                        const user = await request.getModel('User').findOne({where: {'email': request.auth.credentials.email}});
+                        if (!user) {
+                            throw "An error occured";
+                        }
+                        user.isVerified = true;
+                        const saved = await user.save();
+                        const response = {
+                            data: {
+                                id: saved.id,
+                                type: 'user',
+                                attributes: {
+                                    email: saved.email,
+                                    "is-verified": saved.isVerified
+                                }
                             }
                         }
+                        return response;
+                    } catch (e) {
+                        if (e && e.errors) {
+                            e = e.errors[0].message;
+                        }
+                        return Boom.badRequest(e);
                     }
-                    return response;
+                }
+            }
+        },
+        {
+            method: 'POST',
+            path: '/reset_password',
+            handler: async (req, h) => {
+                try {
+                    const body = JSON.parse(req.payload);
+                    if (!body) {
+                        return {};
+                    }
+                    const user = await req.getModel('User').findOne({where: {'email': body.email}});
+                    if (!user || !user.email) {
+                        return {};
+                    }
+                    email.sentMailForgotPassword(user, jwt.createToken(user));
+                    return {};
+                } catch (e) {
+                    return Boom.badRequest('');
+                }
+            }
+        },
+        {
+            path: '/password_reset',
+            method: 'POST',
+            options: {
+                auth: {
+                    strategy: 'token',
+                },
+                handler: async function (req, h) {
+                    try {
+                        const body = JSON.parse(req.payload);
+                        if (body && body.password && req.auth.credentials.email) {        
+                            const user = await req.getModel('User').findOne({where: {'email': req.auth.credentials.email}});
+                            if(!user) {
+                                throw "An error occured";
+                            }
+                            user.password = await bcrypt.hash(body.password, saltRounds);
+                            const saved = await user.save();
+                            const response = {
+                                data: {
+                                    id: saved.id,
+                                    type: 'user',
+                                    attributes: {
+                                        email: saved.email,
+                                        "is-verified": saved.isVerified
+                                    }
+                                }
+                            };
+                            return response;
+                        } else {
+                            throw "Link invalid";
+                        }
+                    } catch (e) {
+                        if (e && e.errors) {
+                            e = e.errors[0].message;
+                        }
+                        return Boom.badRequest(e);
+                    }
                 }
             }
         },
