@@ -18,13 +18,29 @@ const user = function (server, options, next) {
             method: 'POST',
             path: '/',
             handler: async (req, h) => {
-                const user = await req.getModel('User').build(req.payload.user);
-                user.password = await bcrypt.hash(req.payload.user.password, saltRounds);
                 try {
+                    const user = await req.getModel('User').build(req.payload.data.attributes);
+                    if (!user.password) {
+                        throw "Password missing";
+                    }
+                    user.password = await bcrypt.hash(req.payload.data.attributes.password, saltRounds);
                     const saved = await user.save();
                     email.sentMailVerificationLink(user, jwt.createToken(saved));
-                    return {'success': true};
+                    const response = {
+                        data: {
+                            id: saved.id,
+                            type: 'user',
+                            attributes: {
+                                email: saved.email,
+                                "is-verified": saved.isVerified
+                            }
+                        }
+                    }
+                    return response;
                 } catch (e) {
+                    if (e && e.errors) {
+                        e = e.errors[0].message;
+                    }
                     return Boom.badRequest(e);
                 }
             }
@@ -39,7 +55,48 @@ const user = function (server, options, next) {
                 handler: async function (request, h) {
                     const user = await request.getModel('User').findOne({where: {'email': request.auth.credentials.email}});
                     user.isVerified = true;
-                    return user;
+                    const saved = await user.save();
+                    const response = {
+                        data: {
+                            id: saved.id,
+                            type: 'user',
+                            attributes: {
+                                email: saved.email,
+                                "is-verified": saved.isVerified
+                            }
+                        }
+                    }
+                    return response;
+                }
+            }
+        },
+        {
+            path: '/{id}',
+            method: 'GET',
+            options: {
+                auth: {
+                    strategy: 'token',
+                },
+                handler: async function (request, h) {
+                    try {
+                        const user = await request.getModel('User').findOne({where: {'id': request.params.id}});
+                        const response = {
+                            data: {
+                                id: user.id,
+                                type: 'user',
+                                attributes: {
+                                    email: user.email,
+                                    "is-verified": user.isVerified
+                                }
+                            }
+                        }
+                        return response;
+                    } catch (e) {
+                        if (e && e.errors) {
+                            e = e.errors[0].message;
+                        }
+                        return Boom.badRequest(e);
+                    }
                 }
             }
         },

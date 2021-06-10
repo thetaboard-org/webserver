@@ -35,15 +35,19 @@ const auth = function (server, options, next) {
         options: {
             handler: async function (request, h) {
                 try {
+                    if (!request.payload.password || !request.payload.email) {
+                        throw "Email address and / or password can't be empty";
+                    }
                     const user = await request.getModel('User').findOne({where: {'email': request.payload.email}});
                     if (!user) {
-                        throw "Email does not exists";
+                        throw "Incorrect email address and / or password.";
                     }
                     const isSame = await bcrypt.compare(request.payload.password, user.password);
                     if (!isSame) {
-                        throw "Wrong password";
+                        throw "Incorrect email address and / or password.";
                     }
-                    return {"id_token": jwt.createToken(user)}
+                    const token = jwt.createToken(user);
+                    return {"token": token}
                 } catch (error) {
                     return Boom.badRequest(error);
                 }

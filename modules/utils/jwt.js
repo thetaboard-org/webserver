@@ -26,6 +26,7 @@ exports.createToken = (user) => {
             aud: 'urn:audience:thetaboard_user',
             iss: 'urn:issuer:thetaboard',
             email: user.email,
+            userid: user.id,
             scope: user.scope
         },
         {
