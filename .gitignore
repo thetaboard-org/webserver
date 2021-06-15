@@ -219,3 +219,5 @@ fabric.properties
 
 # ignore the compiled ember ui
 /public
+
+/config
