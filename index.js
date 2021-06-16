@@ -59,6 +59,12 @@ const manifest = {
                 routes: {
                     prefix: '/users'
                 }
+            },
+            {
+                plugin: './tfuelstake',
+                routes: {
+                    prefix: '/tfuelstakes'
+                }
             }
         ]
     }
