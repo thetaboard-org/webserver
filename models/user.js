@@ -33,6 +33,11 @@ module.exports = function (sequelize, DataTypes) {
             }
         },
         {
+            associate: function(models) { //create associations/foreign key constraint
+                Users.hasMany(models.Tfuelstakes, {foreignKeyConstraint: true});
+            }
+        },
+        {
             indexes: [{
                 fields: ['email'],
                 unique: true,
@@ -45,7 +50,6 @@ module.exports = function (sequelize, DataTypes) {
         delete values.password;
         return values;
     }
-
     return User;
 };
 
