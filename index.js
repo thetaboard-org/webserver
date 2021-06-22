@@ -1,10 +1,10 @@
 const Glue = require('@hapi/glue');
 const Path = require('path');
 const Sequelize = require('sequelize');
+const secrets = require("./config/secrets.json")
 
 // Server port
 const HTTP_PORT = process.env.PORT || 8000;
-
 
 const manifest = {
     "server": {
@@ -28,8 +28,8 @@ const manifest = {
                         name: 'thetaboard', // identifier
                         models: [__dirname + '/models/**/*.js'], // paths/globs to model files
                         ignoredModels: [__dirname + '/models/index.js'], // OPTIONAL: paths/globs to ignore files
-                        sequelize: new Sequelize('thetaboard', 'root', 'mypass', { // TODO secure pwd
-                            host: process.env.DATABASE_HOST ? process.env.DATABASE_HOST : '127.0.0.1',
+                        sequelize: new Sequelize('thetaboard', secrets.database.user, process.env.MYSQL_PASS, {
+                            host: process.env.DB,
                             dialect: 'mariadb'
                         }), // sequelize instance
                         sync: true, // sync models - default false
