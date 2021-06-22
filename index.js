@@ -65,6 +65,12 @@ const manifest = {
                 routes: {
                     prefix: '/tfuelstakes'
                 }
+            },
+            {
+                plugin: './wallet',
+                routes: {
+                    prefix: '/wallets'
+                }
             }
         ]
     }

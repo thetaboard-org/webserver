@@ -35,6 +35,7 @@ module.exports = function (sequelize, DataTypes) {
         {
             associate: function(models) { //create associations/foreign key constraint
                 Users.hasMany(models.Tfuelstakes, {foreignKeyConstraint: true});
+                Users.hasMany(models.Wallets, {foreignKeyConstraint: true});
             }
         },
         {
