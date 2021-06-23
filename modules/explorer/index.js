@@ -59,6 +59,20 @@ const explorer = function (server, options, next) {
     });
 
     server.route({
+        path: '/totalTfuelStake',
+        method: 'GET',
+        handler: async (req, h) => {
+            try {
+                // get stake
+                const stake = await got(`${req.theta_explorer_api_domain}/api/stake/totalAmount/tfuel`, theta_explorer_api_params);
+                return h.response(JSON.parse(stake.body).body);
+            } catch (error) {
+                return h.response(error.response.body).code(400);
+            }
+        }
+    });
+
+    server.route({
         path: '/wallet-info/{wallet_addr}',
         method: 'GET',
         handler: async (req, h) => {
