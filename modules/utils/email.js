@@ -3,12 +3,13 @@ const nodemailer = require("nodemailer"),
 
 
 const smtpTransport = nodemailer.createTransport(`smtps://${encodeURIComponent(Config.email.username)}:${encodeURIComponent(Config.email.password)}@smtp.gmail.com:465");`)
+const host = process.env.NODE_ENV === 'production' ? 'https://thetaboard.io' : 'http://localhost:8000'
 
 exports.sentMailVerificationLink = function (user, token) {
     const from = `Thetaboard Team < ${Config.email.username} > `;
     const mailbody = ` <p> Thanks for Registering on Thetaboard </p>
                         <p>Please verify your email by clicking on the verification link below.<br/>
-                            <a href='http://localhost:8080/verify/${token}'>Verification Link</a>
+                            <a href='${host}/verify/${token}'>Verification Link</a>
                         </p>`;
     mail(from, user.email, "Account Verification", mailbody);
 };
@@ -18,7 +19,7 @@ exports.sentMailForgotPassword = function (user, token) {
     const from = ` Thetaboard Team < ${Config.email.username} > `;
     const mailbody = `<p>You requested a reset password.</p>
         <p>Please use the following link to reset your password.<br/>
-        <a href='http://localhost:8080/passwordreset/${token}'>Reset password</a>
+        <a href='${host}/passwordreset/${token}'>Reset password</a>
         </p>`;
     mail(from, user.email, "Reset password", mailbody);
 };
