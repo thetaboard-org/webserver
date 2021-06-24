@@ -1,27 +1,26 @@
 const nodemailer = require("nodemailer"),
-    Config = require('../../config/secrets.json');
+    Config = require('../../config/secrets.json'),
+    fs = require('fs');
 
 
 const smtpTransport = nodemailer.createTransport(`smtps://${encodeURIComponent(Config.email.username)}:${encodeURIComponent(Config.email.password)}@smtp.gmail.com:465");`)
 const host = process.env.NODE_ENV === 'production' ? 'https://thetaboard.io' : 'http://localhost:8000'
 
+const injectTemplate = (str, obj) => str.replace(/\${(.*?)}/g, (x, g) => obj[g]);
+
 exports.sentMailVerificationLink = function (user, token) {
     const from = `Thetaboard Team < ${Config.email.username} > `;
-    const mailbody = ` <p> Thanks for Registering on Thetaboard </p>
-                        <p>Please verify your email by clicking on the verification link below.<br/>
-                            <a href='${host}/verify/${token}'>Verification Link</a>
-                        </p>`;
-    mail(from, user.email, "Account Verification", mailbody);
+    const mailbody = fs.readFileSync(require.resolve('./templates/account_verification.html')).toString();
+    const mailBodyWithVars = injectTemplate(mailbody, {host: host, token: token})
+    mail(from, user.email, "Account Verification", mailBodyWithVars);
 };
 
 
 exports.sentMailForgotPassword = function (user, token) {
     const from = ` Thetaboard Team < ${Config.email.username} > `;
-    const mailbody = `<p>You requested a reset password.</p>
-        <p>Please use the following link to reset your password.<br/>
-        <a href='${host}/passwordreset/${token}'>Reset password</a>
-        </p>`;
-    mail(from, user.email, "Reset password", mailbody);
+    const mailbody = fs.readFileSync(require.resolve('./templates/password_reset.html')).toString();
+    const mailBodyWithVars = injectTemplate(mailbody, {host: host, token: token})
+    mail(from, user.email, "Reset password", mailBodyWithVars);
 };
 
 function mail(from, email, subject, mailbody) {
