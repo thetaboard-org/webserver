@@ -18,7 +18,11 @@ module.exports = function (sequelize, DataTypes) {
                 values: ['staking', 'staked', 'unstaking', 'unstaked'],
                 defaultValue: 'staking',
                 allowNull: false
-            }
+            },
+            edgeNodeId: {
+                type: DataTypes.STRING,
+                allowNull: true
+            },
         },
         {
             associate: function(models) { //create associations/foreign key constraint
