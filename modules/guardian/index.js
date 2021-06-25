@@ -94,7 +94,7 @@ const guardian = function (server, options, next) {
 
                     });
                     const job = spawn(`${theta_mainnet_folder}/bin/theta`,
-                        ["start", `--config=${theta_mainnet_folder}_mainnet/node`, `--password=${guardian_password}`],
+                        ["start", `--config=${theta_mainnet_folder}/guardian_mainnet/node`, `--password=${guardian_password}`],
                         {
                             detached: true,// can't run the process detached because of the logs streaming
 
