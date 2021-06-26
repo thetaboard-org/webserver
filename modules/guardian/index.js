@@ -13,7 +13,6 @@ const await_spawn = require('await-spawn');
 // set machine id as password of GN so it persists after docker restart.
 const theta_mainnet_folder = "/home/node/theta_mainnet";
 const guardian_password = "NODE_PASSWORD" in process.env && process.env.NODE_PASSWORD ? process.env.NODE_PASSWORD : "MY_SECRET_NODE_PASSWORD";
-const is_public = "PUBLIC" in process.env && process.env.PUBLIC;
 
 const guardian = function (server, options, next) {
 
@@ -115,25 +114,29 @@ const guardian = function (server, options, next) {
     server.route({
         path: '/stop',
         method: 'GET',
-        handler: async (req, h) => {
-            if (is_public) {
-                return h.response({"error": "Not Authorized", "success": false});
-            }
-            try {
-                const theta_process = await find('name', `${theta_mainnet_folder}/bin/theta`);
-                if (theta_process.length === 0) {
-                    return h.response({"error": "No process found", "success": false});
-                } else {
-                    theta_process.map((x) => {
-                        process.kill(x['pid']);
-                    });
-                    return h.response({"error": null, "success": true});
+        options: {
+            auth: {
+                strategy: 'token',
+                scope: 'Admin'
+            },
+            handler: async (req, h) => {
+                try {
+                    const theta_process = await find('name', `${theta_mainnet_folder}/bin/theta`);
+                    if (theta_process.length === 0) {
+                        return h.response({"error": "No process found", "success": false});
+                    } else {
+                        theta_process.map((x) => {
+                            process.kill(x['pid']);
+                        });
+                        return h.response({"error": null, "success": true});
 
+                    }
+                } catch (e) {
+                    return h.response({"error": e, "success": false});
                 }
-            } catch (e) {
-                return h.response({"error": e, "success": false});
             }
         }
+
     });
 
     server.route({
@@ -176,27 +179,30 @@ const guardian = function (server, options, next) {
     server.route({
         path: '/update',
         method: 'GET',
-        handler: async (req, h) => {
-            if (is_public) {
-                return h.response({"error": "Not Authorized", "success": false});
-            }
-            try {
-                fs.rmSync(`${theta_mainnet_folder}/bin/theta`, {'force': true});
-                fs.rmSync(`${theta_mainnet_folder}/bin/thetacli`, {'force': true});
-                // get latest urls
-                const config = await got(`https://mainnet-data.thetatoken.org/config?is_guardian=true`, {https: {rejectUnauthorized: false}});
-                const theta = await got(`https://mainnet-data.thetatoken.org/binary?os=linux&name=theta`, {https: {rejectUnauthorized: false}});
-                const thetacli = await got(`https://mainnet-data.thetatoken.org/binary?os=linux&name=thetacli`, {https: {rejectUnauthorized: false}});
-                // DLL files
-                const wget_config = await_spawn(`wget`, [`--no-check-certificate`, `-O`, `${theta_mainnet_folder}_mainnet/node/config.yaml`, config.body]);
-                const wget_theta = await_spawn(`wget`, [`--no-check-certificate`, `-O`, `${theta_mainnet_folder}/bin/theta`, theta.body]);
-                const wget_thetacli = await_spawn(`wget`, [`--no-check-certificate`, `-O`, `${theta_mainnet_folder}/bin/thetacli`, thetacli.body]);
-                // put correct auth
-                await_spawn(`chmod`, [`+x`, `${theta_mainnet_folder}/bin/thetacli`]);
-                await_spawn(`chmod`, [`+x`, `${theta_mainnet_folder}/bin/theta`]);
-                return h.response({"error": null, "success": true});
-            } catch (e) {
-                return h.response({"error": e, "success": false});
+        options: {
+            auth: {
+                strategy: 'token',
+                scope: 'Admin'
+            },
+            handler: async (req, h) => {
+                try {
+                    fs.rmSync(`${theta_mainnet_folder}/bin/theta`, {'force': true});
+                    fs.rmSync(`${theta_mainnet_folder}/bin/thetacli`, {'force': true});
+                    // get latest urls
+                    const config = await got(`https://mainnet-data.thetatoken.org/config?is_guardian=true`, {https: {rejectUnauthorized: false}});
+                    const theta = await got(`https://mainnet-data.thetatoken.org/binary?os=linux&name=theta`, {https: {rejectUnauthorized: false}});
+                    const thetacli = await got(`https://mainnet-data.thetatoken.org/binary?os=linux&name=thetacli`, {https: {rejectUnauthorized: false}});
+                    // DLL files
+                    const wget_config = await_spawn(`wget`, [`--no-check-certificate`, `-O`, `${theta_mainnet_folder}_mainnet/node/config.yaml`, config.body]);
+                    const wget_theta = await_spawn(`wget`, [`--no-check-certificate`, `-O`, `${theta_mainnet_folder}/bin/theta`, theta.body]);
+                    const wget_thetacli = await_spawn(`wget`, [`--no-check-certificate`, `-O`, `${theta_mainnet_folder}/bin/thetacli`, thetacli.body]);
+                    // put correct auth
+                    await_spawn(`chmod`, [`+x`, `${theta_mainnet_folder}/bin/thetacli`]);
+                    await_spawn(`chmod`, [`+x`, `${theta_mainnet_folder}/bin/theta`]);
+                    return h.response({"error": null, "success": true});
+                } catch (e) {
+                    return h.response({"error": e, "success": false});
+                }
             }
         }
     });
@@ -204,15 +210,18 @@ const guardian = function (server, options, next) {
     server.route({
         path: '/latest_snapshot',
         method: 'GET',
-        handler: async (req, h) => {
-            if (is_public) {
-                return h.response({"error": "Not Authorized", "success": false});
-            }
-            try {
-                const {birthtime} = fs.statSync(`${theta_mainnet_folder}_mainnet/node/snapshot`, {'force': true});
-                return h.response({"success": true, "date": birthtime})
-            } catch (e) {
-                return h.response({"success": false, "error": e});
+        options: {
+            auth: {
+                strategy: 'token',
+                scope: 'Admin'
+            },
+            handler: async (req, h) => {
+                try {
+                    const {birthtime} = fs.statSync(`${theta_mainnet_folder}_mainnet/node/snapshot`, {'force': true});
+                    return h.response({"success": true, "date": birthtime})
+                } catch (e) {
+                    return h.response({"success": false, "error": e});
+                }
             }
         }
     });
@@ -220,28 +229,31 @@ const guardian = function (server, options, next) {
     server.route({
         path: '/download_snapshot',
         method: 'GET',
-        handler: async (req, h) => {
-            if (is_public) {
-                return h.response({"error": "Not Authorized", "success": false});
-            }
-            try {
-                const theta_process = await find('name', `${theta_mainnet_folder}/bin/theta`);
-                if (theta_process.length > 0) {
-                    return h.response({"msg": "Process is running", "success": false});
-                } else {
-                    fs.rmdirSync(`${theta_mainnet_folder}_mainnet/node/db`, {recursive: true});
-                    fs.rmSync(`${theta_mainnet_folder}_mainnet/node/snapshot`, {'force': true});
-                    const snapshot_url = await got(`https://mainnet-data.thetatoken.org/snapshot`, {https: {rejectUnauthorized: false}});
-                    const {
-                        stdout,
-                        stderr
-                    } = await exec(`wget ${snapshot_url.body} --spider --server-response 2>&1 | sed -n '/Content-Length/{s/.*: //;p}'`);
-                    const wget = spawn(`wget`, [`--no-check-certificate`, `-O`, `${theta_mainnet_folder}_mainnet/node/snapshot`, snapshot_url.body]);
-                    return h.response(wget.stdout).write(`{"Content-Length":${stdout.replace('\n', '')}}\n`);
+        options: {
+            auth: {
+                strategy: 'token',
+                scope: 'Admin'
+            },
+            handler: async (req, h) => {
+                try {
+                    const theta_process = await find('name', `${theta_mainnet_folder}/bin/theta`);
+                    if (theta_process.length > 0) {
+                        return h.response({"msg": "Process is running", "success": false});
+                    } else {
+                        fs.rmdirSync(`${theta_mainnet_folder}_mainnet/node/db`, {recursive: true});
+                        fs.rmSync(`${theta_mainnet_folder}_mainnet/node/snapshot`, {'force': true});
+                        const snapshot_url = await got(`https://mainnet-data.thetatoken.org/snapshot`, {https: {rejectUnauthorized: false}});
+                        const {
+                            stdout,
+                            stderr
+                        } = await exec(`wget ${snapshot_url.body} --spider --server-response 2>&1 | sed -n '/Content-Length/{s/.*: //;p}'`);
+                        const wget = spawn(`wget`, [`--no-check-certificate`, `-O`, `${theta_mainnet_folder}_mainnet/node/snapshot`, snapshot_url.body]);
+                        return h.response(wget.stdout).write(`{"Content-Length":${stdout.replace('\n', '')}}\n`);
 
+                    }
+                } catch (e) {
+                    return h.response({"msg": e, "success": false});
                 }
-            } catch (e) {
-                return h.response({"msg": e, "success": false});
             }
         }
     });

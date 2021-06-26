@@ -43,12 +43,6 @@ const manifest = {
                 }
             },
             {
-                plugin: './guardian',
-                routes: {
-                    prefix: '/guardian'
-                }
-            },
-            {
                 plugin: './auth',
                 routes: {
                     prefix: '/auth'
@@ -58,6 +52,12 @@ const manifest = {
                 plugin: './user',
                 routes: {
                     prefix: '/users'
+                }
+            },
+            {
+                plugin: './guardian',
+                routes: {
+                    prefix: '/guardian'
                 }
             },
             {
@@ -85,14 +85,6 @@ const init = async () => {
 
 
     // TODO: these routes probably shouldn't be there
-    // isPublic
-    server.route({
-        method: 'GET',
-        path: '/is-public',
-        handler: function (request, h) {
-            return h.response({success: true, is_public: "PUBLIC" in process.env && process.env.PUBLIC})
-        }
-    });
     // deliver assets
     server.route({
         method: 'GET',

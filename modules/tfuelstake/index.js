@@ -1,5 +1,4 @@
 const Boom = require('@hapi/boom')
-const jwt = require('../utils/jwt')
 
 const tfuelstake = function (server, options, next) {
     server.route([
@@ -69,7 +68,7 @@ const tfuelstake = function (server, options, next) {
                                     "created-at": stake.createdAt,
                                 }
                             });
-                          });
+                        });
                         return response;
                     } catch (e) {
                         if (e && e.errors) {
