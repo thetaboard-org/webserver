@@ -32,7 +32,8 @@ const user = function (server, options, next) {
                             type: 'user',
                             attributes: {
                                 email: saved.email,
-                                "is-verified": saved.isVerified
+                                "is-verified": saved.isVerified,
+                                scope: saved.scope
                             }
                         }
                     }
@@ -65,7 +66,8 @@ const user = function (server, options, next) {
                                 type: 'user',
                                 attributes: {
                                     email: user.email,
-                                    "is-verified": user.isVerified
+                                    "is-verified": user.isVerified,
+                                    scope: user.scope
                                 }
                             }
                         }
@@ -100,7 +102,8 @@ const user = function (server, options, next) {
                                 type: 'user',
                                 attributes: {
                                     email: saved.email,
-                                    "is-verified": saved.isVerified
+                                    "is-verified": saved.isVerified,
+                                    scope: user.scope
                                 }
                             }
                         }
@@ -157,7 +160,8 @@ const user = function (server, options, next) {
                                     type: 'user',
                                     attributes: {
                                         email: saved.email,
-                                        "is-verified": saved.isVerified
+                                        "is-verified": saved.isVerified,
+                                        scope: saved.scope
                                     }
                                 }
                             };
@@ -190,7 +194,8 @@ const user = function (server, options, next) {
                                 type: 'user',
                                 attributes: {
                                     email: user.email,
-                                    "is-verified": user.isVerified
+                                    "is-verified": user.isVerified,
+                                    scope: user.scope
                                 }
                             }
                         }
