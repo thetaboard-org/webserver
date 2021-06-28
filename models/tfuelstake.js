@@ -23,14 +23,18 @@ module.exports = function (sequelize, DataTypes) {
                 type: DataTypes.STRING,
                 allowNull: true
             },
+            edgeNodeSummary: {
+                type: DataTypes.TEXT,
+                allowNull: true
+            },
         },
         {
-            associate: function(models) { //create associations/foreign key constraint
+            associate: function (models) { //create associations/foreign key constraint
                 Tfuelstake.belongsTo(models.Users, {
                     foreignKey: {
-                      name: 'userId'
+                        name: 'userId'
                     }
-                  });
+                });
             }
         },
         {
@@ -38,16 +42,34 @@ module.exports = function (sequelize, DataTypes) {
                 fields: ['walletAddress'],
                 unique: false,
             },
-            {
-                fields: ['userId'],
-                unique: false,
-            }]
+                {
+                    fields: ['userId'],
+                    unique: false,
+                }]
         });
 
     Tfuelstake.prototype.toJSON = function () {
+        const toKebabCase = (str) => {
+            return str.replace(/([A-Z])([A-Z])/g, '$1-$2')
+                .replace(/([a-z])([A-Z])/g, '$1-$2')
+                .replace(/[\s_]+/g, '-')
+                .toLowerCase()
+        };
         const values = Object.assign({}, this.get());
-        return values;
+        return {
+            id: values.id,
+            type: 'tfuelstake',
+            attributes: Object.entries(values).reduce((acc, value) => {
+                const [key, val] = value;
+                if (key === 'id') {
+                    return acc
+                }
+                acc[toKebabCase(key)] = val;
+                return acc;
+            }, {})
+        }
     }
+    Tfuelstake.sync({alter: true})
     return Tfuelstake;
 
 

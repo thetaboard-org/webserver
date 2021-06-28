@@ -18,20 +18,7 @@ const tfuelstake = function (server, options, next) {
                         let tfuelstake = await req.getModel('Tfuelstake').build(req.payload.data.attributes);
                         tfuelstake.userId = user.id;
                         const saved = await tfuelstake.save();
-                        const response = {
-                            data: {
-                                id: saved.id,
-                                type: 'tfuelstake',
-                                attributes: {
-                                    "user-id": saved.userId,
-                                    "wallet-address": saved.walletAddress,
-                                    "stake-amount": saved.stakeAmount,
-                                    "status": saved.status,
-                                    "created-at": saved.createdAt,
-                                }
-                            }
-                        }
-                        return response;
+                        return {"data": saved.toJSON()};
                     } catch (e) {
                         if (e && e.errors) {
                             e = e.errors[0].message;
@@ -55,21 +42,7 @@ const tfuelstake = function (server, options, next) {
                             throw "User not found";
                         }
                         const tfuelstakes = await req.getModel('Tfuelstake').findAll({where: {'userId': user.id}});
-                        let response = {"data": []};
-                        tfuelstakes.forEach(stake => {
-                            response.data.push({
-                                id: stake.id,
-                                type: 'tfuelstake',
-                                attributes: {
-                                    "user-id": stake.userId,
-                                    "wallet-address": stake.walletAddress,
-                                    "stake-amount": stake.stakeAmount,
-                                    "status": stake.status,
-                                    "created-at": stake.createdAt,
-                                }
-                            });
-                        });
-                        return response;
+                        return {"data": tfuelstakes.map(stake => stake.toJSON())};
                     } catch (e) {
                         if (e && e.errors) {
                             e = e.errors[0].message;
@@ -109,20 +82,7 @@ const tfuelstake = function (server, options, next) {
                         }
 
                         const saved = await tfuelstake.save();
-                        const response = {
-                            data: {
-                                id: saved.id,
-                                type: 'tfuelstake',
-                                attributes: {
-                                    "user-id": saved.userId,
-                                    "wallet-address": saved.walletAddress,
-                                    "stake-amount": saved.stakeAmount,
-                                    "status": saved.status,
-                                    "created-at": saved.createdAt,
-                                }
-                            }
-                        }
-                        return response;
+                        return {"data": tfuelstake.toJSON()};
                     } catch (e) {
                         if (e && e.errors) {
                             e = e.errors[0].message;
