@@ -1,6 +1,9 @@
 const Boom = require('@hapi/boom')
 const got = require('got');
 
+
+const tfuel_stake_host = process.env.NODE_ENV === 'production' ? "http://142.44.213.241:8002/" : "http://localhost:8002";
+
 const tfuelstake = function (server, options, next) {
     server.route([
         {
@@ -22,7 +25,7 @@ const tfuelstake = function (server, options, next) {
                         // TODO: Loop on 500k
                         const maxStake = await req.getModel('Tfuelstake').max('id') || 0;
                         const edgeNodeId = Number(maxStake) + 1;
-                        const edgeNode = await got('http://localhost:8002/edgeNode/start/' + (edgeNodeId));
+                        const edgeNode = await got(tfuel_stake_host + '/edgeNode/start/' + (edgeNodeId));
                         tfuelstake.edgeNodeId = edgeNodeId
                         tfuelstake.edgeNodeSummary = JSON.parse(edgeNode.body).Summary;
                         const saved = await tfuelstake.save();
