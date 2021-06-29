@@ -1,4 +1,5 @@
 const Boom = require('@hapi/boom')
+const got = require('got');
 
 const tfuelstake = function (server, options, next) {
     server.route([
@@ -17,6 +18,13 @@ const tfuelstake = function (server, options, next) {
                         }
                         let tfuelstake = await req.getModel('Tfuelstake').build(req.payload.data.attributes);
                         tfuelstake.userId = user.id;
+                        //create edge node
+                        // TODO: Loop on 500k
+                        const maxStake = await req.getModel('Tfuelstake').max('id') || 0;
+                        const edgeNodeId = Number(maxStake) + 1;
+                        const edgeNode = await got('http://localhost:8002/edgeNode/start/' + (edgeNodeId));
+                        tfuelstake.edgeNodeId = edgeNodeId
+                        tfuelstake.edgeNodeSummary = JSON.parse(edgeNode.body).Summary;
                         const saved = await tfuelstake.save();
                         return {"data": saved.toJSON()};
                     } catch (e) {

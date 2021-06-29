@@ -67,6 +67,12 @@ const manifest = {
                 }
             },
             {
+                plugin: './publicEdgeNode',
+                routes: {
+                    prefix: '/public-edge-nodes'
+                }
+            },
+            {
                 plugin: './wallet',
                 routes: {
                     prefix: '/wallets'

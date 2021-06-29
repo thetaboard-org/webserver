@@ -11,7 +11,7 @@ module.exports = function (sequelize, DataTypes) {
             },
             stakeAmount: {
                 type: DataTypes.FLOAT,
-                allowNull: false
+                allowNull: true
             },
             status: {
                 type: DataTypes.ENUM,
