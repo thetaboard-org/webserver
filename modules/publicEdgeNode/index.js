@@ -1,6 +1,7 @@
 const Boom = require('@hapi/boom')
 const got = require('got');
 const tfuel_stake_host = process.env.NODE_ENV === 'production' ? "http://147.135.65.155:8002" : "http://localhost:8002";
+const MAX_PUBLIC = 20;
 
 const publicEdgeNode = function (server, options, next) {
     server.route([
@@ -11,7 +12,7 @@ const publicEdgeNode = function (server, options, next) {
                 handler: async (req, h) => {
                     try {
                         let publicEdgeNodes = await req.getModel('PublicEdgeNode').findAll();
-                        if (publicEdgeNodes.length < 2) {
+                        if (publicEdgeNodes.length < MAX_PUBLIC) {
                             publicEdgeNodes = await setupPublicEdgeNode(req, publicEdgeNodes);
                         }
 
