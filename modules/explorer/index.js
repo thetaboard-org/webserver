@@ -107,17 +107,25 @@ const explorer = function (server, options, next) {
                 });
 
                 // get staked theta
-                const staked_query = await got(`${req.theta_explorer_api_domain}/api/stake/${wallet_adr}`, theta_explorer_api_params);
+                const staked_query = await got(`${req.theta_explorer_api_domain}/api/stake/${wallet_adr}?types[]=vcp&types[]=gcp&types[]=eenp`, theta_explorer_api_params);
                 response.push(...JSON.parse(staked_query.body).body.sourceRecords.map((x) => {
-                    return {
+                    let result = {
                         "amount": x["amount"] / wei_divider,
-                        "type": "guardian",
-                        "value": x["amount"] / wei_divider * theta_price,
-                        "market_price": theta_price,
                         "wallet_address": x["source"],
                         "node_address": x["holder"],
-                        "currency": "theta"
                     }
+                    if (x["type"] == "gcp") {
+                        result.type = "Guardian Node";
+                        result.market_price = theta_price;
+                        result.value = x["amount"] / wei_divider * theta_price;
+                        result.currency = "theta";
+                    } else  if (x["type"] == "eenp") {
+                        result.type = "Elite Edge Node";
+                        result.market_price = tfuel_price;
+                        result.value = x["amount"] / wei_divider * tfuel_price;
+                        result.currency = "tfuel";
+                    }
+                    return result;
                 }));
 
                 return h.response({wallets: response})
