@@ -20,7 +20,7 @@ module.exports = function (sequelize, DataTypes) {
                 allowNull: false
             },
             edgeNodeId: {
-                type: DataTypes.STRING,
+                type: DataTypes.INTEGER,
                 allowNull: true
             },
             edgeNodeSummary: {
