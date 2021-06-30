@@ -1,6 +1,6 @@
 const Boom = require('@hapi/boom')
 const got = require('got');
-const tfuel_stake_host = process.env.NODE_ENV === 'production' ? "http://142.44.213.241:8002" : "http://localhost:8002";
+const tfuel_stake_host = process.env.NODE_ENV === 'production' ? "http://147.135.65.155:8002" : "http://localhost:8002";
 
 const publicEdgeNode = function (server, options, next) {
     server.route([
