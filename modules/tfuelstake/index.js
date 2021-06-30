@@ -23,7 +23,7 @@ const tfuelstake = function (server, options, next) {
                         tfuelstake.userId = user.id;
                         //create edge node
                         // TODO: Loop on 500k
-                        const maxStake = await req.getModel('Tfuelstake').max('id') || 0;
+                        const maxStake = await req.getModel('Tfuelstake').max('edgeNodeId') || 0;
                         const edgeNodeId = Number(maxStake) + 1;
                         const edgeNode = await got(tfuel_stake_host + '/edgeNode/start/' + (edgeNodeId));
                         tfuelstake.edgeNodeId = edgeNodeId
