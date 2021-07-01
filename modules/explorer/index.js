@@ -50,7 +50,7 @@ const explorer = function (server, options, next) {
         handler: async (req, h) => {
             try {
                 // get stake
-                const stake = await got(`${req.theta_explorer_api_domain}/api/stake/totalAmount`, theta_explorer_api_params);
+                const stake = await got(`${req.theta_explorer_api_domain}/api/stake/totalAmount?type=theta`, theta_explorer_api_params);
                 return h.response(JSON.parse(stake.body).body);
             } catch (error) {
                 return h.response(error.response.body).code(400);
@@ -64,7 +64,7 @@ const explorer = function (server, options, next) {
         handler: async (req, h) => {
             try {
                 // get stake
-                const stake = await got(`${req.theta_explorer_api_domain}/api/stake/totalAmount/tfuel`, theta_explorer_api_params);
+                const stake = await got(`${req.theta_explorer_api_domain}/api/stake/totalAmount?type=tfuel`, theta_explorer_api_params);
                 return h.response(JSON.parse(stake.body).body);
             } catch (error) {
                 return h.response(error.response.body).code(400);
