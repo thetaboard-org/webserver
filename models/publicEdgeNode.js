@@ -6,7 +6,7 @@ module.exports = function (sequelize, DataTypes) {
                 allowNull: false
             },
             nodeId: {
-                type: DataTypes.STRING,
+                type: DataTypes.INTEGER,
                 allowNull: false
             },
         },
