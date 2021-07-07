@@ -1,5 +1,7 @@
+const update_stake_amount = require('./tfuelstake').update_stake_amount;
+
 module.exports = function (sequelize, DataTypes) {
-    const PublicEdgeNode = sequelize.define('PublicEdgeNode', 
+    const PublicEdgeNode = sequelize.define('PublicEdgeNode',
         {
             summary: {
                 type: DataTypes.TEXT,
@@ -46,6 +48,12 @@ module.exports = function (sequelize, DataTypes) {
         }
     }
     PublicEdgeNode.sync({alter: true});
+
+    PublicEdgeNode.afterFind(async (models, something, somethingElse) => {
+        models.map(update_stake_amount);
+        return models;
+    });
+
     return PublicEdgeNode;
 };
 

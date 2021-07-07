@@ -1,7 +1,7 @@
 const Boom = require('@hapi/boom')
 const got = require('got');
 const tfuel_stake_host = process.env.NODE_ENV === 'production' ? "http://147.135.65.155:8002" : "http://localhost:8002";
-const MAX_PUBLIC = 20;
+const MAX_PUBLIC = 1;
 
 const publicEdgeNode = function (server, options, next) {
     server.route([
@@ -40,30 +40,7 @@ setupPublicEdgeNode = async function (req, publicEdgeNodes) {
         await publicEdgeNode.save();
     }
     return await req.getModel('PublicEdgeNode').findAll();
-
-    // const edgeNodeToCreate = 10 - publicEdgeNodes.length;
-    // const maxNodeId = await req.getModel('PublicEdgeNode').max('nodeId') || 2499;
-    // let promises = [];
-    // for (let index = 1; index < edgeNodeToCreate + 1; index++) {
-    //     const edgeNodeId = Number(maxNodeId) + index;
-    //     let publicEdgeNode = await req.getModel('PublicEdgeNode').build();
-    //     publicEdgeNode.nodeId = edgeNodeId;
-    //     promises.push(publicEdgeNode);
-    // }
-
-    // await Promise.all(
-    //     promises.map(async (publicEdgeNode) => {
-    //        const edgeNode = await got('http://localhost:8002/edgeNode/start/' + publicEdgeNode.nodeId);
-    //         if (JSON.parse(edgeNode.body).Summary) {
-    //             publicEdgeNode.summary = await JSON.parse(edgeNode.body).Summary;
-    //             await publicEdgeNode.save();
-    //         }
-    //     })
-    // );
-
-    // return await req.getModel('PublicEdgeNode').findAll();
 }
-
 
 module.exports = {
     register: publicEdgeNode,

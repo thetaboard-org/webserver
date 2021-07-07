@@ -26,7 +26,7 @@ const tfuelstake = function (server, options, next) {
                         const edgeNodeId = Number(maxStake) + 1;
                         const edgeNode = await got(tfuel_stake_host + '/edgeNode/start/' + (edgeNodeId));
                         tfuelstake.edgeNodeId = edgeNodeId
-                        tfuelstake.edgeNodeSummary = JSON.parse(edgeNode.body).Summary;
+                        tfuelstake.summary = JSON.parse(edgeNode.body).Summary;
                         const saved = await tfuelstake.save();
                         return {"data": saved.toJSON()};
                     } catch (e) {
