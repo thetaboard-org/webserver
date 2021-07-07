@@ -163,7 +163,8 @@ const explorer = function (server, options, next) {
                     currentPageNumber: transaction_list.currentPageNumber,
                     totalPageNumber: transaction_list.totalPageNumber
                 };
-                transaction_history.push(...transaction_list.body.map((x) => {
+                transaction_history.push(
+                    ...transaction_list.body.map((x) => {
                     let from, to, values, typeName = null;
                     if (x["type"] == 0) {
                         from = x["data"]["proposer"];
@@ -194,6 +195,11 @@ const explorer = function (server, options, next) {
                         to = x["data"]["to"];
                         values = to;
                         typeName = "Smart Contract";
+                    } else if (x["type"] == 11) {
+                        from = x["data"]["holder"];
+                        to = x["data"]["beneficiary"];
+                        values = from;
+                        typeName = "Stake Reward Distribution";
                     } else {
                         new Error("we don't handle transactions of type : " + x["type"])
                     }
