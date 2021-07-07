@@ -101,7 +101,7 @@ const update_stake_amount = async (model) => {
                 const stakes = await JSON.parse(rawStakes.body).body.holderRecords;
                 if (stakes && stakes.length > 0) {
                     const finalAmount = Math.round(stakes.reduce((a, b) => Number(a) + Number(b.amount), 0));
-                    model.stakeAmount = finalAmount / wei_divider;
+                    model.stakeAmount = Math.min((finalAmount / wei_divider), 500000);
                     model.save();
                 } else {
                     model.stakeAmount = 0;

@@ -32,11 +32,16 @@ const explorer = function (server, options, next) {
             try {
                 // get prices
                 const prices = await got(`${req.theta_explorer_api_domain}/api/price/all`, theta_explorer_api_params);
+                // get Blocks per hour
+                const blockCountPerHours = await got(`${req.theta_explorer_api_domain}/api/blocks/number/1`, theta_explorer_api_params);
+
                 const tfuel_price = JSON.parse(prices.body).body.filter(x => x['_id'] === 'TFUEL')[0];
                 const theta_price = JSON.parse(prices.body).body.filter(x => x['_id'] === 'THETA')[0];
+                const secPerBlock = 3600/(JSON.parse(blockCountPerHours.body).body.total_num_block);
                 return h.response({
                     theta: theta_price,
                     tfuel: tfuel_price,
+                    secPerBlock: secPerBlock,
                 });
             } catch (error) {
                 return h.response(error.response.body).code(400);
