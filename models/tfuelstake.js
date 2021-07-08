@@ -63,9 +63,6 @@ module.exports = function (sequelize, DataTypes) {
             }, {})
         }
     }
-    // TODO delete migration
-    Tfuelstake.sequelize.getQueryInterface().renameColumn('Tfuelstakes', 'edgeNodeSummary', 'summary');
-    //End of todo
     Tfuelstake.sync({alter: true});
     Tfuelstake.afterFind(async (models, something, somethingElse) => {
         models.map(update_stake_amount);
@@ -100,7 +97,7 @@ const update_stake_amount = async (model) => {
                 const rawStakes = await got(`${theta_explorer_api_domain}/api/stake/${edgeNodeAddress}?types[]=eenp`, theta_explorer_api_params);
                 const stakes = await JSON.parse(rawStakes.body).body.holderRecords;
                 if (stakes && stakes.length > 0) {
-                    const finalAmount = Math.round(stakes.reduce((a, b) => Number(a) + Number(b.amount), 0));
+                    const finalAmount = Math.round(stakes.filter((x) => !x.withdrawn).reduce((a, b) => Number(a) + Number(b.amount), 0));
                     model.stakeAmount = Math.min((finalAmount / wei_divider), 500000);
                     model.save();
                 } else {
