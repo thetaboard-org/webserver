@@ -1,12 +1,7 @@
 const Boom = require('@hapi/boom')
 const got = require('got');
-<<<<<<< HEAD
 const tfuel_stake_host = process.env.NODE_ENV === 'production' ? "http://147.135.65.51:8002" : "http://localhost:8002";
-const MAX_PUBLIC = 1;
-=======
-const tfuel_stake_host = process.env.NODE_ENV === 'production' ? "http://147.135.65.155:8002" : "http://localhost:8002";
 const MAX_PUBLIC = 10;
->>>>>>> rotating EEN
 
 const publicEdgeNode = function (server, options, next) {
     server.route([
