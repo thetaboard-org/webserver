@@ -102,6 +102,31 @@ const tfuelstake = function (server, options, next) {
                 }
             }
         },
+        {
+            method: 'GET',
+            path: '/all',
+            options: {
+                auth: {
+                    strategy: 'token',
+                    scope: 'Admin'
+                },
+                handler: async (req, h) => {
+                    try {
+                        const user = await req.getModel('User').findOne({where: {'email': req.auth.credentials.email}});
+                        if (!user) {
+                            throw "User not found";
+                        }
+                        const tfuelstakes = await req.getModel('Tfuelstake').findAll();
+                        return {"data": tfuelstakes.map(stake => stake.toJSON())};
+                    } catch (e) {
+                        if (e && e.errors) {
+                            e = e.errors[0].message;
+                        }
+                        return Boom.badRequest(e);
+                    }
+                }
+            }
+        },
     ]);
 };
 
