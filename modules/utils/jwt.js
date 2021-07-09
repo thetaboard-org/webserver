@@ -10,7 +10,7 @@ exports.validate = (artifacts, request, h) => {
     if (diff < 0) { //check how long is left on the token
         return {
             isValid: true,
-            credentials: {email: artifacts.decoded.payload.email}
+            credentials: {email: artifacts.decoded.payload.email, scope: artifacts.decoded.payload.scope}
         };
     } else {
         return {
