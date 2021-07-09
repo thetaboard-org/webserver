@@ -169,7 +169,7 @@ const explorer = function (server, options, next) {
                     if (x["type"] == 0) {
                         from = x["data"]["proposer"];
                         to = x["data"]["outputs"].filter(x => x['address'].toUpperCase() === wallet_adr.toUpperCase())[0];
-                        values = to;
+                        values = to ? to : from;
                         typeName = "Coinbase";
                     } else if (x["type"] == 10) {
                         from = x["data"]["source"];
@@ -178,11 +178,7 @@ const explorer = function (server, options, next) {
                         typeName = "Deposit Stake";
                     } else if (x["type"] == 2) {
                         from = x["data"]["inputs"][0];
-                        if (x["data"]["outputs"].length == 1) {
-                            to = x["data"]["outputs"][0];
-                        } else {
-                            to = x["data"]["outputs"].filter(x => x['address'].toUpperCase() === wallet_adr.toUpperCase())[0];
-                        }
+                        to = x["data"]["outputs"].filter(x => x['address'].toUpperCase() === wallet_adr.toUpperCase())[0] || x["data"]["outputs"][0];
                         values = to;
                         typeName = "Transfer";
                     } else if (x["type"] == 9) {
@@ -213,7 +209,7 @@ const explorer = function (server, options, next) {
                         "timestamp": dateFormat(new Date(Number(x["timestamp"]) * 1000), "isoDateTime"),
                         "status": x["status"],
                         "from_wallet_address": from["address"],
-                        "to_wallet_address": to["address"],
+                        "to_wallet_address": to ? to["address"] : '',
                         "value": [{
                             "type": "theta",
                             "amount": values["coins"]["thetawei"] / wei_divider,
