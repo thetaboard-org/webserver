@@ -15,12 +15,18 @@ const publicEdgeNode = function (server, options, next) {
                             order: [['stakeAmount', 'ASC']],
                             limit: MAX_PUBLIC
                         });
-                        const staked = publicEdgeNodes.reduce((a, b) =>  a + b.stakeAmount, 0);
+                        const staked = publicEdgeNodes.reduce((a, b) => a + b.stakeAmount, 0);
                         const maxStaked = publicEdgeNodes.length * 500000;
                         const availableToStake = maxStaked - staked;
                         const minimumAvailable = 1500000;
                         if (availableToStake < minimumAvailable) {
-                             publicEdgeNodes = await setupPublicEdgeNode(req);
+                            try {
+                                publicEdgeNodes.unshift(await setupPublicEdgeNode(req));
+                                publicEdgeNodes.pop();
+
+                            } catch (e) {
+                                console.warn("could not setup EN", e);
+                            }
                         }
                         return {"data": publicEdgeNodes};
                     } catch (e) {
@@ -38,17 +44,19 @@ const publicEdgeNode = function (server, options, next) {
 setupPublicEdgeNode = async function (req) {
     const maxNodeId = await req.getModel('PublicEdgeNode').max('nodeId') || 2499;
     const edgeNodeId = Number(maxNodeId) + 1;
-    const edgeNode = await got(tfuel_stake_host + '/edgeNode/start/' + edgeNodeId);
-    if (JSON.parse(edgeNode.body).Summary) {
-        let publicEdgeNode = await req.getModel('PublicEdgeNode').build();
-        publicEdgeNode.nodeId = edgeNodeId;
-        publicEdgeNode.summary = await JSON.parse(edgeNode.body).Summary;
-        await publicEdgeNode.save();
+    let edgeNode = await got(tfuel_stake_host + '/edgeNode/start/' + edgeNodeId);
+    if (!JSON.parse(edgeNode.body).Summary) {
+        // the docker might already be up, try to get summary if it is the case
+        edgeNode = await got(tfuel_stake_host + '/edgeNode/summary/' + edgeNodeId);
+        if (!JSON.parse(edgeNode.body).Summary) {
+            throw "Did not get summary";
+        }
     }
-    return await req.getModel('PublicEdgeNode').findAll({
-        order: [['stakeAmount', 'ASC']],
-        limit: MAX_PUBLIC
-    });
+    const publicEdgeNode = await req.getModel('PublicEdgeNode').build();
+    publicEdgeNode.nodeId = edgeNodeId;
+    publicEdgeNode.summary = await JSON.parse(edgeNode.body).Summary;
+    await publicEdgeNode.save();
+    return publicEdgeNode
 }
 
 module.exports = {
