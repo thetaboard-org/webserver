@@ -45,16 +45,23 @@ setupPublicEdgeNode = async function (req) {
     const maxNodeId = await req.getModel('PublicEdgeNode').max('nodeId') || 2499;
     const edgeNodeId = Number(maxNodeId) + 1;
     let edgeNode = await got(tfuel_stake_host + '/edgeNode/start/' + edgeNodeId);
-    if (!JSON.parse(edgeNode.body).Summary) {
-        // the docker might already be up, try to get summary if it is the case
+    let summary;
+    try {
+        summary = await JSON.parse(edgeNode.body).Summary
+        if (!summary) {
+            throw "No summary"
+        }
+    } catch (e) {
         edgeNode = await got(tfuel_stake_host + '/edgeNode/summary/' + edgeNodeId);
-        if (!JSON.parse(edgeNode.body).Summary) {
-            throw "Did not get summary";
+        summary = await JSON.parse(edgeNode.body).Summary;
+        if (!summary) {
+            throw "No summary"
         }
     }
+
     const publicEdgeNode = await req.getModel('PublicEdgeNode').build();
     publicEdgeNode.nodeId = edgeNodeId;
-    publicEdgeNode.summary = await JSON.parse(edgeNode.body).Summary;
+    publicEdgeNode.summary = summary;
     await publicEdgeNode.save();
     return publicEdgeNode
 }
