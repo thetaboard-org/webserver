@@ -2,7 +2,7 @@ const Boom = require('@hapi/boom')
 const got = require('got');
 const tfuel_stake_host = process.env.NODE_ENV === 'production' ? "http://147.135.65.51:8002" : "http://localhost:8002";
 const MAX_PUBLIC = 10;
-
+const MINIMUM_TFUEL_AVAILABLE = 1500000;
 const publicEdgeNode = function (server, options, next) {
     server.route([
         {
@@ -11,14 +11,14 @@ const publicEdgeNode = function (server, options, next) {
             options: {
                 handler: async (req, h) => {
                     try {
-                        let publicEdgeNodes = await req.getModel('PublicEdgeNode').findAll({
-                            order: [['stakeAmount', 'ASC']],
-                            limit: MAX_PUBLIC
+                        let allPublicEdgeNodes = await req.getModel('PublicEdgeNode').findAll({
+                            order: [['stakeAmount', 'ASC']]
                         });
+                        let publicEdgeNodes = allPublicEdgeNodes.slice(0, MAX_PUBLIC);
                         const staked = publicEdgeNodes.reduce((a, b) => a + b.stakeAmount, 0);
                         const maxStaked = publicEdgeNodes.length * 500000;
                         const availableToStake = maxStaked - staked;
-                        const minimumAvailable = 1500000;
+                        const minimumAvailable = MINIMUM_TFUEL_AVAILABLE;
                         if (availableToStake < minimumAvailable) {
                             try {
                                 publicEdgeNodes.unshift(await setupPublicEdgeNode(req));
