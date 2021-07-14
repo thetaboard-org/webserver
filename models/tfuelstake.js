@@ -91,7 +91,8 @@ const update_stake_amount = async (model) => {
             if (!model.summary) {
                 model.stakeAmount = 0;
                 model.save();
-                console.warn("No summary for EN: ", model.id);
+                console.warn("" +
+                    "No summary for EN: ", model.id);
             } else {
                 const edgeNodeAddress = model.summary.substring(0, 42);
                 const rawStakes = await got(`${theta_explorer_api_domain}/api/stake/${edgeNodeAddress}?types[]=eenp`, theta_explorer_api_params);

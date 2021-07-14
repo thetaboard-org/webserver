@@ -18,17 +18,9 @@ const tfuelstake = function (server, options, next) {
                         if (!user) {
                             throw "User not found";
                         }
-                        let tfuelstake = await req.getModel('Tfuelstake').build(req.payload.data.attributes);
-                        tfuelstake.userId = user.id;
                         //create edge node
-                        // TODO: Loop on 500k
-                        const maxStake = await req.getModel('Tfuelstake').max('edgeNodeId') || 0;
-                        const edgeNodeId = Number(maxStake) + 1;
-                        const edgeNode = await got(tfuel_stake_host + '/edgeNode/start/' + (edgeNodeId));
-                        tfuelstake.edgeNodeId = edgeNodeId
-                        tfuelstake.summary = JSON.parse(edgeNode.body).Summary;
-                        const saved = await tfuelstake.save();
-                        return {"data": saved.toJSON()};
+                        const EN = await setupPrivateEdgeNode(req, user)
+                        return {"data": EN.toJSON()};
                     } catch (e) {
                         if (e && e.errors) {
                             e = e.errors[0].message;
@@ -129,6 +121,32 @@ const tfuelstake = function (server, options, next) {
         },
     ]);
 };
+
+
+setupPrivateEdgeNode = async function (req, user) {
+    const maxNodeId = await req.getModel('Tfuelstake').max('edgeNodeId') || 0;
+    const edgeNodeId = Number(maxNodeId) + 1;
+    let edgeNode = await got(tfuel_stake_host + '/edgeNode/start/' + (edgeNodeId));
+    let summary;
+    try {
+        summary = await JSON.parse(edgeNode.body).Summary
+        if (!summary) {
+            throw "No summary"
+        }
+    } catch (e) {
+        edgeNode = await got(tfuel_stake_host + '/edgeNode/summary/' + edgeNodeId);
+        summary = await JSON.parse(edgeNode.body).Summary;
+        if (!summary) {
+            throw "No summary"
+        }
+    }
+    const tfuelstake = await req.getModel('Tfuelstake').build(req.payload.data.attributes);
+    tfuelstake.userId = user.id;
+    tfuelstake.edgeNodeId = edgeNodeId;
+    tfuelstake.summary = summary;
+    await tfuelstake.save();
+    return tfuelstake
+}
 
 
 module.exports = {
