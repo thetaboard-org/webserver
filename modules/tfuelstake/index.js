@@ -126,9 +126,10 @@ const tfuelstake = function (server, options, next) {
 setupPrivateEdgeNode = async function (req, user) {
     const maxNodeId = await req.getModel('Tfuelstake').max('edgeNodeId') || 0;
     const edgeNodeId = Number(maxNodeId) + 1;
-    let edgeNode = await got(tfuel_stake_host + '/edgeNode/start/' + (edgeNodeId));
+    let edgeNode;
     let summary;
     try {
+        edgeNode = await got(tfuel_stake_host + '/edgeNode/start/' + (edgeNodeId));
         summary = await JSON.parse(edgeNode.body).Summary
         if (!summary) {
             throw "No summary"

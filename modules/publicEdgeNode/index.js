@@ -44,9 +44,10 @@ const publicEdgeNode = function (server, options, next) {
 setupPublicEdgeNode = async function (req) {
     const maxNodeId = await req.getModel('PublicEdgeNode').max('nodeId') || 2499;
     const edgeNodeId = Number(maxNodeId) + 1;
-    let edgeNode = await got(tfuel_stake_host + '/edgeNode/start/' + edgeNodeId);
+    let edgeNode;
     let summary;
     try {
+        edgeNode = await got(tfuel_stake_host + '/edgeNode/start/' + edgeNodeId);
         summary = await JSON.parse(edgeNode.body).Summary
         if (!summary) {
             throw "No summary"
