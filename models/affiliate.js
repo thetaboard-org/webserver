@@ -1,46 +1,51 @@
-const update_stake_amount = require('./tfuelstake').update_stake_amount;
-
 module.exports = function (sequelize, DataTypes) {
-    const PublicEdgeNode = sequelize.define('PublicEdgeNode',
-        {
-            summary: {
-                type: DataTypes.TEXT,
-                allowNull: false
-            },
-            nodeId: {
+    const Affiliate = sequelize.define('Affiliate', {
+            //link user record
+            userId: {
                 type: DataTypes.INTEGER,
+                allowNull: false,
+            },
+            address: {
+                type: DataTypes.STRING,
                 allowNull: false
             },
-            stakeAmount: {
-                type: DataTypes.FLOAT,
+            name: {
+                type: DataTypes.STRING,
+                allowNull: false
+            },
+            displayName: {
+                type: DataTypes.STRING,
+                allowNull: false
+            },
+            logo: {
+                type: DataTypes.STRING,
                 allowNull: true
-            },
-            //link affiliate record
-            affiliateId: {
-                type: DataTypes.INTEGER,
-                allowNull: true,
             },
         },
         {
             associate: function(models) { //create associations/foreign key constraint
-                PublicEdgeNode.belongsTo(models.Affiliates, {
+                Affiliate.belongsTo(models.Users, {
                     foreignKey: {
-                      name: 'affiliateId'
+                      name: 'userId'
                     }
                 });
+                Affiliate.hasMany(models.PublicEdgeNodes, {foreignKeyConstraint: true});
+
             }
         },
         {
-            indexes: [
-                {
-                    fields: ['nodeId'],
-                    unique: true,
-                },
-            ]
+            indexes: [{
+                fields: ['name'],
+                unique: true,
+            },
+            {
+                fields: ['userId'],
+                unique: false,
+            }]
         }
     );
 
-    PublicEdgeNode.prototype.toJSON = function () {
+    Affiliate.prototype.toJSON = function () {
         const toKebabCase = (str) => {
             return str.replace(/([A-Z])([A-Z])/g, '$1-$2')
                 .replace(/([a-z])([A-Z])/g, '$1-$2')
@@ -50,7 +55,7 @@ module.exports = function (sequelize, DataTypes) {
         const values = Object.assign({}, this.get());
         return {
             id: values.id,
-            type: 'publicEdgeNode',
+            type: 'affiliate',
             attributes: Object.entries(values).reduce((acc, value) => {
                 const [key, val] = value;
                 if (key === 'id') {
@@ -61,13 +66,6 @@ module.exports = function (sequelize, DataTypes) {
             }, {})
         }
     }
-    PublicEdgeNode.sync({alter: true});
-
-    PublicEdgeNode.afterFind(async (models) => {
-        models.map(update_stake_amount);
-        return models;
-    });
-
-    return PublicEdgeNode;
+    return Affiliate;
 };
 

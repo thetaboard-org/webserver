@@ -2,7 +2,9 @@ const Boom = require('@hapi/boom')
 const got = require('got');
 const tfuel_stake_host = process.env.NODE_ENV === 'production' ? "http://147.135.65.49:8002" : "http://localhost:8002";
 const MAX_PUBLIC = 10;
+const MAX_AFFILIATE = 5;
 const MINIMUM_TFUEL_AVAILABLE = 1500000;
+const MINIMUM_TFUEL_AVAILABLE_AFFILIATE = 500000;
 const publicEdgeNode = function (server, options, next) {
     server.route([
         {
@@ -11,17 +13,42 @@ const publicEdgeNode = function (server, options, next) {
             options: {
                 handler: async (req, h) => {
                     try {
-                        let allPublicEdgeNodes = await req.getModel('PublicEdgeNode').findAll({
-                            order: [['stakeAmount', 'ASC']]
-                        });
-                        let publicEdgeNodes = allPublicEdgeNodes.slice(0, MAX_PUBLIC);
+                        let allPublicEdgeNodes = [];
+                        let publicEdgeNodes = [];
+                        let minimumAvailable = 0;
+                        let affiliate = null;
+                        if (req.query && req.query.affiliate) {
+                            affiliate = await req.getModel('Affiliate').findOne({where: {'name': req.query.affiliate}});
+                            if (affiliate) {
+                                allPublicEdgeNodes = await req.getModel('PublicEdgeNode').findAll({
+                                    where: {
+                                        affiliateId: affiliate.id
+                                    },
+                                    order: [['stakeAmount', 'ASC']]
+                                });
+                                publicEdgeNodes = allPublicEdgeNodes.slice(0, MAX_AFFILIATE);
+                                minimumAvailable = MINIMUM_TFUEL_AVAILABLE_AFFILIATE;
+                            } else {
+                                throw 'No affiliate found';
+                            }
+                        } else {
+                            allPublicEdgeNodes = await req.getModel('PublicEdgeNode').findAll({
+                                where: {
+                                    affiliateId: null
+                                },
+                                order: [['stakeAmount', 'ASC']]
+                            });    
+                            publicEdgeNodes = allPublicEdgeNodes.slice(0, MAX_PUBLIC);
+                            minimumAvailable = MINIMUM_TFUEL_AVAILABLE;
+
+                        }
+
                         const staked = publicEdgeNodes.reduce((a, b) => a + b.stakeAmount, 0);
                         const maxStaked = publicEdgeNodes.length * 500000;
                         const availableToStake = maxStaked - staked;
-                        const minimumAvailable = MINIMUM_TFUEL_AVAILABLE;
                         if (availableToStake < minimumAvailable) {
                             try {
-                                publicEdgeNodes.unshift(await setupPublicEdgeNode(req));
+                                publicEdgeNodes.unshift(await setupPublicEdgeNode(req, affiliate));
                                 publicEdgeNodes.pop();
 
                             } catch (e) {
@@ -41,7 +68,7 @@ const publicEdgeNode = function (server, options, next) {
     ]);
 };
 
-setupPublicEdgeNode = async function (req) {
+setupPublicEdgeNode = async function (req, affiliate) {
     const maxNodeId = await req.getModel('PublicEdgeNode').max('nodeId') || 2499;
     const edgeNodeId = Number(maxNodeId) + 1;
     let edgeNode;
@@ -50,19 +77,22 @@ setupPublicEdgeNode = async function (req) {
         edgeNode = await got(tfuel_stake_host + '/edgeNode/start/' + edgeNodeId);
         summary = await JSON.parse(edgeNode.body).Summary
         if (!summary) {
-            throw "No summary"
+            throw "No summary";
         }
     } catch (e) {
         edgeNode = await got(tfuel_stake_host + '/edgeNode/summary/' + edgeNodeId);
         summary = await JSON.parse(edgeNode.body).Summary;
         if (!summary) {
-            throw "No summary"
+            throw "No summary";
         }
     }
 
     const publicEdgeNode = await req.getModel('PublicEdgeNode').build();
     publicEdgeNode.nodeId = edgeNodeId;
     publicEdgeNode.summary = summary;
+    if (affiliate) {
+        publicEdgeNode.affiliateId = affiliate.id;
+    }
     await publicEdgeNode.save();
     return publicEdgeNode
 }

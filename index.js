@@ -77,6 +77,12 @@ const manifest = {
                 routes: {
                     prefix: '/wallets'
                 }
+            },
+            {
+                plugin: './affiliate',
+                routes: {
+                    prefix: '/affiliates'
+                }
             }
         ]
     }
