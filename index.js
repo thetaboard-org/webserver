@@ -21,6 +21,7 @@ const manifest = {
             '@hapi/bell', // oauth with third party
             '@hapi/cookie', //session in cookies
             '@hapi/jwt', // auth with jwt,
+
             {
                 plugin: require('hapi-sequelizejs'),
                 options: [
@@ -76,6 +77,12 @@ const manifest = {
                 plugin: './wallet',
                 routes: {
                     prefix: '/wallets'
+                }
+            },
+            {
+                plugin: './group',
+                routes: {
+                    prefix: '/groups'
                 }
             },
             {

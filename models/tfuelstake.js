@@ -1,6 +1,6 @@
 module.exports = function (sequelize, DataTypes) {
     const Tfuelstake = sequelize.define('Tfuelstake', {
-            //link user record
+            // link user record
             userId: {
                 type: DataTypes.INTEGER,
                 allowNull: false,
@@ -23,24 +23,19 @@ module.exports = function (sequelize, DataTypes) {
             },
         },
         {
-            associate: function (models) { //create associations/foreign key constraint
-                Tfuelstake.belongsTo(models.Users, {
-                    foreignKey: {
-                        name: 'userId'
-                    }
-                });
-            }
-        },
-        {
             indexes: [{
                 fields: ['walletAddress'],
                 unique: false,
-            },
-                {
-                    fields: ['userId'],
-                    unique: false,
-                }]
+            }]
         });
+
+    Tfuelstake.associate = function (models) { //create associations/foreign key constraint
+        Tfuelstake.belongsTo(models.User, {
+            foreignKey: {
+                name: 'userId'
+            }
+        });
+    }
 
     Tfuelstake.prototype.toJSON = function () {
         const toKebabCase = (str) => {

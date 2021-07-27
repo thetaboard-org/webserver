@@ -1,7 +1,7 @@
 const Boom = require('@hapi/boom')
 const jwt = require('../utils/jwt')
 
-const wallet = function (server, options, next) {
+const group = function (server, options, next) {
     server.route([
         {
             method: 'POST',
@@ -16,14 +16,19 @@ const wallet = function (server, options, next) {
                         if (!user) {
                             throw "User not found";
                         }
-                        let wallet = await req.getModel('Wallet').build(req.payload.data.attributes);
-                        wallet.userId = user.id;
-                        const saved = await wallet.save();
+                        let group = await req.getModel('Group').build(req.payload.data.attributes);
+                        group.userId = user.id;
+                        const saved = await group.save();
+
+                        if (req.payload.data.relationships && req.payload.data.relationships.wallets) {
+                            const wallets = req.payload.data.relationships.wallets.data.map(wallet => wallet.id);
+                            await saved.addWallets(wallets);
+                        }
                         await setDefault(saved, req);
                         const response = {
                             data: {
                                 id: saved.id,
-                                type: 'wallet',
+                                type: 'group',
                                 attributes: {
                                     "user-id": saved.userId,
                                     "address": saved.address,
@@ -55,19 +60,31 @@ const wallet = function (server, options, next) {
                         if (!user) {
                             throw "User not found";
                         }
-                        const wallets = await req.getModel('Wallet').findAll({where: {'userId': user.id}});
+                        const WalletModel = await req.getModel('Wallet');
+                        const groups = await req.getModel('Group').findAll({
+                            where: {'userId': user.id},
+                            include: WalletModel 
+                        });
                         let response = {"data": []};
-                        wallets.forEach(wallet => {
-                            response.data.push({
-                                id: wallet.id,
-                                type: 'wallet',
+                        groups.forEach((group) => {
+                            console.log()
+                            const data = {
+                                id: group.id,
+                                type: 'group',
                                 attributes: {
-                                    "user-id": wallet.userId,
-                                    "address": wallet.address,
-                                    "is-default": wallet.isDefault,
-                                    "name": wallet.name
+                                    "user-id": group.userId,
+                                    "is-default": group.isDefault,
+                                    "name": group.name
                                 }
-                            });
+                            };
+                            if (group.Wallets.length) {
+                                data.relationships = {
+                                    wallets: {
+                                        data: group.Wallets.map((x) => ({ "type": "wallet", "id": x.id }))    
+                                    }
+                                }
+                            }
+                            response.data.push(data);
                           });
                         return response;
                     } catch (e) {
@@ -92,21 +109,21 @@ const wallet = function (server, options, next) {
                         if (!user) {
                             throw "User not found";
                         }
-                        const wallet = await req.getModel('Wallet').findOne({where: {'id': req.params.id}});
-                        if (!wallet) {
-                            throw "Wallet not found";
+                        const group = await req.getModel('Group').findOne({where: {'id': req.params.id}});
+                        if (!group) {
+                            throw "Group not found";
                         }
-                        if (wallet.userId != user.id) {
+                        if (group.userId != user.id) {
                             throw "Not authorized";
                         }
 
-                        wallet.isDefault = req.payload.data.attributes.isDefault;
-                        const saved = await wallet.save();
+                        group.isDefault = req.payload.data.attributes.isDefault;
+                        const saved = await group.save();
                         await setDefault(saved, req);
                         const response = {
                             data: {
                                 id: saved.id,
-                                type: 'wallet',
+                                type: 'group',
                                 attributes: {
                                     "user-id": saved.userId,
                                     "address": saved.address,
@@ -138,14 +155,14 @@ const wallet = function (server, options, next) {
                         if (!user) {
                             throw "User not found";
                         }
-                        const wallet = await req.getModel('Wallet').findOne({where: {'id': req.params.id}});
-                        if (!wallet) {
-                            throw "Wallet not found";
+                        const group = await req.getModel('Group').findOne({where: {'id': req.params.id}});
+                        if (!group) {
+                            throw "Group not found";
                         }
-                        if (wallet.userId != user.id) {
+                        if (group.userId != user.id) {
                             throw "Not authorized";
                         }
-                        wallet.destroy();
+                        group.destroy();
                         return null;
                     } catch (e) {
                         if (e && e.errors) {
@@ -159,29 +176,30 @@ const wallet = function (server, options, next) {
     ]);
 };
 
-const setDefault = async function (defaultWallet, req) {
-    if (!defaultWallet.isDefault) {
+const setDefault = async function (defaultGroup, req) {
+    if (!defaultGroup.isDefault) {
         return;
     }
-    const wallets = await req.getModel('Wallet').findAll({where: {'userId': defaultWallet.userId}});
-    wallets.forEach((wallet) => {
-        if (wallet.id == defaultWallet.id) {
-            wallet.isDefault = true;
-        } else {
-            wallet.isDefault = false;
-        }
-        wallet.save();
-    });
-    const groups = await req.getModel('Group').findAll({where: {'userId': defaultWallet.userId}});
+    const groups = await req.getModel('Group').findAll({where: {'userId': defaultGroup.userId}});
     groups.forEach((group) => {
-        group.isDefault = false;
+        if (group.id == defaultgroup.id) {
+            group.isDefault = true;
+        } else {
+            group.isDefault = false;
+        }
         group.save();
     });
-    return wallets;
+    const wallets = await req.getModel('Wallet').findAll({where: {'userId': defaultWallet.userId}});
+    wallets.forEach((wallet) => {
+        wallet.isDefault = false;
+        wallet.save();
+    });
+
+    return groups;
 }
 
 module.exports = {
-    register: wallet,
-    name: 'wallet',
+    register: group,
+    name: 'group',
     version: '1.0.0'
 };
