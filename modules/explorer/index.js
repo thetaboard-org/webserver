@@ -84,56 +84,57 @@ const explorer = function (server, options, next) {
             const wallet_adr = req.params.wallet_addr;
             const response = [];
             try {
+                if (!wallet_adr) {
+                    throw "No wallet address provided";
+                }
                 // get price
                 const prices = await got(`${req.theta_explorer_api_domain}/api/price/all`, theta_explorer_api_params);
                 const tfuel_price = JSON.parse(prices.body).body.filter(x => x['_id'] === 'TFUEL')[0]['price'];
                 const theta_price = JSON.parse(prices.body).body.filter(x => x['_id'] === 'THETA')[0]['price'];
-                // get theta holding
-                const holding = await got(`${req.theta_explorer_api_domain}/api/account/${wallet_adr}`, theta_explorer_api_params);
-
-                const balances = JSON.parse(holding.body).body.balance;
-                response.push({
-                    "amount": balances['thetawei'] / wei_divider,
-                    "type": "wallet",
-                    "value": balances['thetawei'] / wei_divider * theta_price,
-                    "market_price": theta_price,
-                    "wallet_address": wallet_adr,
-                    "node_address": null,
-                    "currency": "theta"
-                });
-                response.push({
-                    "amount": balances['tfuelwei'] / wei_divider,
-                    "type": "wallet",
-                    "value": balances['tfuelwei'] / wei_divider * tfuel_price,
-                    "market_price": tfuel_price,
-                    "wallet_address": wallet_adr,
-                    "node_address": null,
-                    "currency": "tfuel"
-                });
-
-                // get staked theta
-                const staked_query = await got(`${req.theta_explorer_api_domain}/api/stake/${wallet_adr}?types[]=vcp&types[]=gcp&types[]=eenp`, theta_explorer_api_params);
-                response.push(...JSON.parse(staked_query.body).body.sourceRecords.map((x) => {
-                    let result = {
-                        "amount": x["amount"] / wei_divider,
-                        "wallet_address": x["source"],
-                        "node_address": x["holder"],
-                    }
-                    if (x["type"] == "gcp") {
-                        result.type = "Guardian Node";
-                        result.market_price = theta_price;
-                        result.value = x["amount"] / wei_divider * theta_price;
-                        result.currency = "theta";
-                    } else  if (x["type"] == "eenp") {
-                        result.type = "Elite Edge Node";
-                        result.market_price = tfuel_price;
-                        result.value = x["amount"] / wei_divider * tfuel_price;
-                        result.currency = "tfuel";
-                    }
-                    return result;
-                }));
-
+                response.push(...await getWalletInfo(wallet_adr, tfuel_price, theta_price, req));
                 return h.response({wallets: response})
+            } catch (error) {
+                return h.response(error.response.body).code(400);
+            }
+        }
+    });
+
+    server.route({
+        path: '/group-info/{group_uuid}',
+        method: 'GET',
+        handler: async (req, h) => {
+            try {
+                const group_uuid = req.params.group_uuid;
+                const response = [];
+    
+                if (!group_uuid) {
+                    throw "No Group id provided";
+                }
+
+                let group = await req.getModel('Group').findOne(
+                    { 
+                        where: { 'uuid': group_uuid },
+                        include: { all: true }
+                    }
+                );
+                if (!group) {
+                    throw "No Group Found";
+                }
+
+                // get price
+                const prices = await got(`${req.theta_explorer_api_domain}/api/price/all`, theta_explorer_api_params);
+                const tfuel_price = JSON.parse(prices.body).body.filter(x => x['_id'] === 'TFUEL')[0]['price'];
+                const theta_price = JSON.parse(prices.body).body.filter(x => x['_id'] === 'THETA')[0]['price'];
+
+                const promises = group.Wallets.map(async (wallet) => {
+                    const wallet_adr = wallet.address;
+                    let wallets = await getWalletInfo(wallet_adr, tfuel_price, theta_price, req);
+                    if (wallets && wallets.length) {
+                        response.push(...wallets);
+                    }
+                });
+
+                return Promise.all(promises).then(() => h.response({wallets: response}));
             } catch (error) {
                 return h.response(error.response.body).code(400);
             }
@@ -229,6 +230,56 @@ const explorer = function (server, options, next) {
             }
         }
     });
+}
+
+
+const getWalletInfo = async function (wallet_adr, tfuel_price, theta_price, req) {
+    let response = [];
+    // get theta holding
+    const holding = await got(`${req.theta_explorer_api_domain}/api/account/${wallet_adr}`, theta_explorer_api_params);
+
+    const balances = await JSON.parse(holding.body).body.balance;
+    response.push({
+        "amount": balances['thetawei'] / wei_divider,
+        "type": "wallet",
+        "value": balances['thetawei'] / wei_divider * theta_price,
+        "market_price": theta_price,
+        "wallet_address": wallet_adr,
+        "node_address": null,
+        "currency": "theta"
+    });
+    response.push({
+        "amount": balances['tfuelwei'] / wei_divider,
+        "type": "wallet",
+        "value": balances['tfuelwei'] / wei_divider * tfuel_price,
+        "market_price": tfuel_price,
+        "wallet_address": wallet_adr,
+        "node_address": null,
+        "currency": "tfuel"
+    });
+
+    // get staked theta/tfuel
+    const staked_query = await got(`${req.theta_explorer_api_domain}/api/stake/${wallet_adr}?types[]=vcp&types[]=gcp&types[]=eenp`, theta_explorer_api_params);
+    response.push(...JSON.parse(staked_query.body).body.sourceRecords.map((x) => {
+        let result = {
+            "amount": x["amount"] / wei_divider,
+            "wallet_address": x["source"],
+            "node_address": x["holder"],
+        }
+        if (x["type"] == "gcp") {
+            result.type = "Guardian Node";
+            result.market_price = theta_price;
+            result.value = x["amount"] / wei_divider * theta_price;
+            result.currency = "theta";
+        } else  if (x["type"] == "eenp") {
+            result.type = "Elite Edge Node";
+            result.market_price = tfuel_price;
+            result.value = x["amount"] / wei_divider * tfuel_price;
+            result.currency = "tfuel";
+        }
+        return result;
+    }));
+    return response
 }
 
 

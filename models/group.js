@@ -1,5 +1,9 @@
 module.exports = function (sequelize, DataTypes) {
     const Group = sequelize.define('Group', {
+            uuid: {
+                type: DataTypes.UUID,
+                defaultValue: DataTypes.UUIDV4,
+            },
             //link user record
             userId: {
                 type: DataTypes.INTEGER,

@@ -1,5 +1,6 @@
 const Boom = require('@hapi/boom')
 const jwt = require('../utils/jwt')
+const { v4: uuidv4 } = require('uuid');
 
 const group = function (server, options, next) {
     server.route([
@@ -17,6 +18,7 @@ const group = function (server, options, next) {
                             throw "User not found";
                         }
                         let group = await req.getModel('Group').build(req.payload.data.attributes);
+                        group.uuid = uuidv4();
                         group.userId = user.id;
                         const saved = await group.save();
 
@@ -31,6 +33,7 @@ const group = function (server, options, next) {
                                 type: 'group',
                                 attributes: {
                                     "user-id": saved.userId,
+                                    "uuid": saved.uuid,
                                     "address": saved.address,
                                     "is-default": saved.isDefault,
                                     "name": saved.name
@@ -73,6 +76,7 @@ const group = function (server, options, next) {
                                 type: 'group',
                                 attributes: {
                                     "user-id": group.userId,
+                                    "uuid": group.uuid,
                                     "is-default": group.isDefault,
                                     "name": group.name
                                 }
@@ -126,6 +130,7 @@ const group = function (server, options, next) {
                                 type: 'group',
                                 attributes: {
                                     "user-id": saved.userId,
+                                    "uuid": saved.uuid,
                                     "address": saved.address,
                                     "is-default": saved.isDefault,
                                     "name": saved.name
@@ -182,14 +187,14 @@ const setDefault = async function (defaultGroup, req) {
     }
     const groups = await req.getModel('Group').findAll({where: {'userId': defaultGroup.userId}});
     groups.forEach((group) => {
-        if (group.id == defaultgroup.id) {
+        if (group.id == defaultGroup.id) {
             group.isDefault = true;
         } else {
             group.isDefault = false;
         }
         group.save();
     });
-    const wallets = await req.getModel('Wallet').findAll({where: {'userId': defaultWallet.userId}});
+    const wallets = await req.getModel('Wallet').findAll({where: {'userId': defaultGroup.userId}});
     wallets.forEach((wallet) => {
         wallet.isDefault = false;
         wallet.save();
