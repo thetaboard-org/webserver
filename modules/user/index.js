@@ -187,7 +187,16 @@ const user = function (server, options, next) {
                 },
                 handler: async function (request, h) {
                     try {
-                        const user = await request.getModel('User').findOne({where: {'id': request.params.id}});
+                        const user = await request.getModel('User').findOne(
+                            {
+                                where: {
+                                    'id': request.params.id
+                                },
+                                include: { 
+                                    all: true,
+                                    nested: true
+                                }
+                            });
                         const response = {
                             data: {
                                 id: user.id,
@@ -196,7 +205,32 @@ const user = function (server, options, next) {
                                     email: user.email,
                                     "is-verified": user.isVerified,
                                     scope: user.scope
-                                }
+                                },
+                                relationships: {}
+                            },
+                        }
+
+                        if (user.Wallets.length) {
+                            response.data.relationships.wallets = {
+                                data: user.Wallets.map((x) => ({ "type": "wallet", "id": x.id }))    
+                            }
+                        }
+
+                        if (user.Affiliates.length) {
+                            response.data.relationships.affiliates = {
+                                data: user.Affiliates.map((x) => ({ "type": "affiliate", "id": x.id }))    
+                            }
+                        }
+
+                        if (user.Tfuelstakes.length) {
+                            response.data.relationships.tfuelstakes = {
+                                data: user.Tfuelstakes.map((x) => ({ "type": "tfuelstakes", "id": x.id }))    
+                            }
+                        }
+
+                        if (user.Groups.length) {
+                            response.data.relationships.groups = {
+                                data: user.Groups.map((x) => ({ "type": "group", "id": x.id }))    
                             }
                         }
                         return response;

@@ -22,23 +22,26 @@ module.exports = function (sequelize, DataTypes) {
             },
         },
         {
-            associate: function(models) { //create associations/foreign key constraint
-                PublicEdgeNode.belongsTo(models.Affiliates, {
-                    foreignKey: {
-                      name: 'affiliateId'
-                    }
-                });
-            }
-        },
-        {
             indexes: [
                 {
                     fields: ['nodeId'],
                     unique: true,
                 },
+                {
+                    fields: ['affiliateId'],
+                    unique: false
+                }
             ]
         }
     );
+
+    PublicEdgeNode.associate = function(models) { //create associations/foreign key constraint
+        PublicEdgeNode.belongsTo(models.Affiliate, {
+            foreignKey: {
+                name: 'affiliateId'
+            }
+        });
+    }
 
     PublicEdgeNode.prototype.toJSON = function () {
         const toKebabCase = (str) => {
