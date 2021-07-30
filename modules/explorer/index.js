@@ -1,5 +1,7 @@
 const got = require('got');
 const dateFormat = require("dateformat");
+const Sequelize = require('sequelize');
+const Op = Sequelize.Op;
 
 const wei_divider = 1000000000000000000;
 
@@ -29,22 +31,77 @@ const explorer = function (server, options, next) {
         path: '/prices',
         method: 'GET',
         handler: async (req, h) => {
-            try {
-                // get prices
-                const prices = await got(`${req.theta_explorer_api_domain}/api/price/all`, theta_explorer_api_params);
-                // get Blocks per hour
-                const blockCountPerHours = await got(`${req.theta_explorer_api_domain}/api/blocks/number/1`, theta_explorer_api_params);
 
-                const tfuel_price = JSON.parse(prices.body).body.filter(x => x['_id'] === 'TFUEL')[0];
-                const theta_price = JSON.parse(prices.body).body.filter(x => x['_id'] === 'THETA')[0];
-                const secPerBlock = 3600/(JSON.parse(blockCountPerHours.body).body.total_num_block);
-                return h.response({
-                    theta: theta_price,
-                    tfuel: tfuel_price,
-                    secPerBlock: secPerBlock,
+            const start_date = req.query.start_date;
+            const end_date = req.query.end_date;
+            const currency = req.query.currency ? req.query.currency : "USD";
+
+            if (!server.methods.getPrice) {
+                // 10min cache
+                server.method('getPrice', getPrice, {
+                    cache: {
+                        expiresIn: 600 * 1000,
+                        generateTimeout: 20000,
+
+                    },
+                    generateKey: function (...args) {
+                        return args.filter((x) => !!x).join(',');
+                    }
                 });
+            }
+
+            async function getPrice(start_date = null, end_date = null, currency = null) {
+                let historic_prices = [];
+                if (start_date && end_date) {
+                    historic_prices = await req.getModel('Price').findAll({
+                            where: {
+                                date: {
+                                    [Op.between]: [start_date, end_date]
+                                },
+                                currency: currency
+                            },
+                            order: [['date', 'asc']]
+                        }
+                    );
+                }
+
+                // API calls for live info
+                const [theta_price, blockCountPerHours, supply] = await Promise.all([
+                    got(`https://api.coingecko.com/api/v3/simple/price?
+                    ids=theta-token%2Ctheta-fuel&vs_currencies=${currency}
+                    &include_24hr_change=true&include_market_cap=true&include_24hr_vol=true`).json(),
+                    got(`${req.theta_explorer_api_domain}/api/blocks/number/1`, theta_explorer_api_params).json(),
+                    got(`${req.theta_explorer_api_domain}/api/price/all`, theta_explorer_api_params).json()]);
+                const secPerBlock = 3600 / (blockCountPerHours.body.total_num_block);
+                const supply_theta = supply.body.find((x) => x._id === 'THETA');
+                const supply_tfuel = supply.body.find((x) => x._id === 'TFUEL');
+                return {
+                    theta: {
+                        "price": theta_price["theta-token"][currency.toLowerCase()],
+                        "change_24h": theta_price["theta-token"][`${currency.toLowerCase()}_24h_change`],
+                        "market_cap": theta_price["theta-token"][`${currency.toLowerCase()}_market_cap`],
+                        "volume_24h": theta_price["theta-token"][`${currency.toLowerCase()}_24h_vol`],
+                        "circulating_supply": supply_theta["circulating_supply"],
+                        "total_supply": supply_theta["total_supply"],
+                    },
+                    tfuel: {
+                        price: theta_price["theta-fuel"][currency.toLowerCase()],
+                        "change_24h": theta_price["theta-fuel"][`${currency.toLowerCase()}_24h_change`],
+                        "market_cap": theta_price["theta-fuel"][`${currency.toLowerCase()}_market_cap`],
+                        "volume_24h": theta_price["theta-fuel"][`${currency.toLowerCase()}_24h_vol`],
+                        "circulating_supply": supply_tfuel["circulating_supply"],
+                        "total_supply": supply_tfuel["total_supply"],
+                    },
+                    dailyPrice: historic_prices.map(x => x.toJSON()['attributes']),
+                    secPerBlock: secPerBlock,
+                }
+
+            }
+
+            try {
+                return await server.methods.getPrice(start_date, end_date, currency);
             } catch (error) {
-                return h.response(error.response.body).code(400);
+                return h.response(error).code(400);
             }
         }
     });
@@ -124,7 +181,7 @@ const explorer = function (server, options, next) {
                         result.market_price = theta_price;
                         result.value = x["amount"] / wei_divider * theta_price;
                         result.currency = "theta";
-                    } else  if (x["type"] == "eenp") {
+                    } else if (x["type"] == "eenp") {
                         result.type = "Elite Edge Node";
                         result.market_price = tfuel_price;
                         result.value = x["amount"] / wei_divider * tfuel_price;
@@ -165,63 +222,63 @@ const explorer = function (server, options, next) {
                 };
                 transaction_history.push(
                     ...transaction_list.body.map((x) => {
-                    let from, to, values, typeName = null;
-                    if (x["type"] == 0) {
-                        from = x["data"]["proposer"];
-                        to = x["data"]["outputs"].filter(x => x['address'].toUpperCase() === wallet_adr.toUpperCase())[0];
-                        values = to ? to : from;
-                        typeName = "Coinbase";
-                    } else if (x["type"] == 10) {
-                        from = x["data"]["source"];
-                        to = x["data"]["holder"];
-                        values = from;
-                        typeName = "Deposit Stake";
-                    } else if (x["type"] == 2) {
-                        from = x["data"]["inputs"][0];
-                        to = x["data"]["outputs"].filter(x => x['address'].toUpperCase() === wallet_adr.toUpperCase())[0] || x["data"]["outputs"][0];
-                        values = to;
-                        typeName = "Transfer";
-                    } else if (x["type"] == 9) {
-                        to = x["data"]["source"];
-                        from = x["data"]["holder"];
-                        values = to;
-                        typeName = "Withdraw Stake";
-                    } else if (x["type"] == 7) {
-                        from = x["data"]["from"];
-                        to = x["data"]["to"];
-                        values = to;
-                        typeName = "Smart Contract";
-                    } else if (x["type"] == 11) {
-                        from = x["data"]["holder"];
-                        to = x["data"]["beneficiary"];
-                        values = from;
-                        typeName = "Stake Reward Distribution";
-                    } else {
-                        new Error("we don't handle transactions of type : " + x["type"])
-                    }
-
-                    return {
-                        "in_or_out": wallet_adr.toUpperCase() == from["address"].toUpperCase() ? "out" : "in",
-                        "type": x["type"],
-                        "typeName": typeName,
-                        "txn_hash": x["hash"],
-                        "block": x["block_height"],
-                        "timestamp": dateFormat(new Date(Number(x["timestamp"]) * 1000), "isoDateTime"),
-                        "status": x["status"],
-                        "from_wallet_address": from["address"],
-                        "to_wallet_address": to ? to["address"] : '',
-                        "value": [{
-                            "type": "theta",
-                            "amount": values["coins"]["thetawei"] / wei_divider,
-                            "value": values["coins"]["thetawei"] / wei_divider * theta_price
-                        }, {
-                            "type": "tfuel",
-                            "amount": values["coins"]["tfuelwei"] / wei_divider,
-                            "value": values["coins"]["tfuelwei"] / wei_divider * tfuel_price
+                        let from, to, values, typeName = null;
+                        if (x["type"] == 0) {
+                            from = x["data"]["proposer"];
+                            to = x["data"]["outputs"].filter(x => x['address'].toUpperCase() === wallet_adr.toUpperCase())[0];
+                            values = to ? to : from;
+                            typeName = "Coinbase";
+                        } else if (x["type"] == 10) {
+                            from = x["data"]["source"];
+                            to = x["data"]["holder"];
+                            values = from;
+                            typeName = "Deposit Stake";
+                        } else if (x["type"] == 2) {
+                            from = x["data"]["inputs"][0];
+                            to = x["data"]["outputs"].filter(x => x['address'].toUpperCase() === wallet_adr.toUpperCase())[0] || x["data"]["outputs"][0];
+                            values = to;
+                            typeName = "Transfer";
+                        } else if (x["type"] == 9) {
+                            to = x["data"]["source"];
+                            from = x["data"]["holder"];
+                            values = to;
+                            typeName = "Withdraw Stake";
+                        } else if (x["type"] == 7) {
+                            from = x["data"]["from"];
+                            to = x["data"]["to"];
+                            values = to;
+                            typeName = "Smart Contract";
+                        } else if (x["type"] == 11) {
+                            from = x["data"]["holder"];
+                            to = x["data"]["beneficiary"];
+                            values = from;
+                            typeName = "Stake Reward Distribution";
+                        } else {
+                            new Error("we don't handle transactions of type : " + x["type"])
                         }
-                        ]
-                    }
-                }));
+
+                        return {
+                            "in_or_out": wallet_adr.toUpperCase() == from["address"].toUpperCase() ? "out" : "in",
+                            "type": x["type"],
+                            "typeName": typeName,
+                            "txn_hash": x["hash"],
+                            "block": x["block_height"],
+                            "timestamp": dateFormat(new Date(Number(x["timestamp"]) * 1000), "isoDateTime"),
+                            "status": x["status"],
+                            "from_wallet_address": from["address"],
+                            "to_wallet_address": to ? to["address"] : '',
+                            "value": [{
+                                "type": "theta",
+                                "amount": values["coins"]["thetawei"] / wei_divider,
+                                "value": values["coins"]["thetawei"] / wei_divider * theta_price
+                            }, {
+                                "type": "tfuel",
+                                "amount": values["coins"]["tfuelwei"] / wei_divider,
+                                "value": values["coins"]["tfuelwei"] / wei_divider * tfuel_price
+                            }
+                            ]
+                        }
+                    }));
 
                 return h.response({transactions: transaction_history, pagination: pagination})
             } catch (error) {
