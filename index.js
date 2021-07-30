@@ -90,6 +90,12 @@ const manifest = {
                 routes: {
                     prefix: '/affiliates'
                 }
+            },
+            {
+                plugin: './transactionHistory',
+                routes: {
+                    prefix: '/transaction-histories'
+                }
             }
         ]
     }
