@@ -96,6 +96,12 @@ const manifest = {
                 routes: {
                     prefix: '/transaction-histories'
                 }
+            },
+            {
+                plugin: './coinbaseHistory',
+                routes: {
+                    prefix: '/coinbase-histories'
+                }
             }
         ]
     }

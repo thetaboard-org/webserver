@@ -1,5 +1,4 @@
 const Boom = require('@hapi/boom');
-const jwt = require('../utils/jwt')
 const { Op } = require("sequelize");
 const dateFormat = require("dateformat");
 const got = require('got');
@@ -56,7 +55,6 @@ const transactionHistory = function (server, options, next) {
                     offset: offset
                 });
 
-                // const transaction_list = JSON.parse(transaction_history_query.body);
                 const pagination = {
                     currentPageNumber: pageNumber,
                     totalPageNumber: Math.ceil(transaction_count / limitNumber)
@@ -96,8 +94,11 @@ const transactionHistory = function (server, options, next) {
                 }));
 
                 return h.response({ data: transaction_history, meta: { pagination: pagination } })
-            } catch (error) {
-                return h.response(error.response.body).code(400);
+            } catch (e) {
+                if (e && e.errors) {
+                    e = e.errors[0].message;
+                }
+                return Boom.badRequest(e);
             }
         }
     });
