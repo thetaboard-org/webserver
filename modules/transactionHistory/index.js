@@ -44,13 +44,15 @@ const transactionHistory = function (server, options, next) {
                                 }
                             }
                         ]
-                    }
+                    },
+                    order: [['tx_timestamp', 'DESC']]
                 };
 
                 const transaction_count = await req.getModel('TransactionHistory').count(whereCondition);
     
                 const transaction_list = await req.getModel('TransactionHistory').findAll({
                     where: whereCondition.where,  
+                    order: whereCondition.order,  
                     limit: limitNumber,
                     offset: offset
                 });

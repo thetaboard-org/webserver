@@ -39,7 +39,8 @@ const coinbaseHistory = function (server, options, next) {
                                 type: 0
                             }
                         ]
-                    }
+                    },
+                    order: [['tx_timestamp', 'DESC']]
                 };
     
                 const coinbase_list = await req.getModel('TransactionHistory').findAll(whereCondition);
