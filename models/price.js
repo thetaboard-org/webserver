@@ -91,7 +91,7 @@ module.exports = function (sequelize, DataTypes) {
                     `https://api.coingecko.com/api/v3/coins/theta-fuel/market_chart/range?vs_currency=${currency}&from=${start_ts}&to=${end_ts}`
                 ).json();
                 const all_models = await Promise.all(theta_price.prices.map(async (x, idx) => {
-                    return await Price.upsert({
+                    return Price.upsert({
                         date: Moment(x[0]).utc().format('YYYY-MM-DD'),
                         theta_price: x[1],
                         tfuel_price: tfuel_price.prices[idx][1],

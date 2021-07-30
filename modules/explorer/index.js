@@ -67,9 +67,7 @@ const explorer = function (server, options, next) {
 
                 // API calls for live info
                 const [theta_price, blockCountPerHours, supply] = await Promise.all([
-                    got(`https://api.coingecko.com/api/v3/simple/price?
-                    ids=theta-token%2Ctheta-fuel&vs_currencies=${currency}
-                    &include_24hr_change=true&include_market_cap=true&include_24hr_vol=true`).json(),
+                    got(`https://api.coingecko.com/api/v3/simple/price?ids=theta-token%2Ctheta-fuel&vs_currencies=${currency}&include_24hr_change=true&include_market_cap=true&include_24hr_vol=true`).json(),
                     got(`${req.theta_explorer_api_domain}/api/blocks/number/1`, theta_explorer_api_params).json(),
                     got(`${req.theta_explorer_api_domain}/api/price/all`, theta_explorer_api_params).json()]);
                 const secPerBlock = 3600 / (blockCountPerHours.body.total_num_block);
