@@ -48,14 +48,14 @@ const transactionHistory = function (server, options, next) {
                     order: [['tx_timestamp', 'DESC']]
                 };
 
-                const transaction_count = await req.getModel('TransactionHistory').count(whereCondition);
-    
-                const transaction_list = await req.getModel('TransactionHistory').findAll({
-                    where: whereCondition.where,  
-                    order: whereCondition.order,  
-                    limit: limitNumber,
-                    offset: offset
-                });
+                const [transaction_count, transaction_list] = await Promise.all([
+                    req.getModel('TransactionHistory').count(whereCondition),
+                    req.getModel('TransactionHistory').findAll({
+                        where: whereCondition.where,
+                        order: whereCondition.order,
+                        limit: limitNumber,
+                        offset: offset
+                    })]);
 
                 const pagination = {
                     currentPageNumber: pageNumber,
@@ -64,8 +64,8 @@ const transactionHistory = function (server, options, next) {
                 transaction_history.push(
                     ...transaction_list.map((x) => {
 
-                    return {
-                        "id": x["hash"],
+                        return {
+                            "id": x["hash"],
                         "type": 'transaction-history',
                         "attributes": {
                             "in-or-out": walletAddresses.map((x) => x.toUpperCase()).includes(x["from_address"].toUpperCase()) ? "out" : "in",
