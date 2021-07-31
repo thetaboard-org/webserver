@@ -70,7 +70,6 @@ const group = function (server, options, next) {
                         });
                         let response = {"data": []};
                         groups.forEach((group) => {
-                            console.log()
                             const data = {
                                 id: group.id,
                                 type: 'group',
