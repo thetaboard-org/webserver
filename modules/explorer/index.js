@@ -331,6 +331,11 @@ const getWalletInfo = async function (wallet_adr, tfuel_price, theta_price, req)
             result.market_price = tfuel_price;
             result.value = x["amount"] / wei_divider * tfuel_price;
             result.currency = "tfuel";
+        } else  if (x["type"] == "vcp") {
+            result.type = "Validator Node";
+            result.market_price = theta_price;
+            result.value = x["amount"] / wei_divider * theta_price;
+            result.currency = "theta";
         }
         return result;
     }));
