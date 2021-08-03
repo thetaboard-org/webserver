@@ -21,6 +21,10 @@ module.exports = function (sequelize, DataTypes) {
                 type: DataTypes.TEXT,
                 allowNull: true
             },
+            splitRewards: {
+                type: DataTypes.BOOLEAN,
+                allowNull: true,
+            },
         },
         {
             indexes: [{

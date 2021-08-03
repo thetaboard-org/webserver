@@ -20,6 +20,10 @@ module.exports = function (sequelize, DataTypes) {
                 type: DataTypes.INTEGER,
                 allowNull: true,
             },
+            splitRewards: {
+                type: DataTypes.BOOLEAN,
+                allowNull: true,
+            },
         },
         {
             indexes: [

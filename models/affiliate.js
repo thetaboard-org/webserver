@@ -66,7 +66,7 @@ module.exports = function (sequelize, DataTypes) {
         }
     }
 
-    Affiliate.sync({alter: true});
+    //Affiliate.sync({alter: true});
     return Affiliate;
 };
 

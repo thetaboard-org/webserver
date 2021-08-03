@@ -36,7 +36,7 @@ module.exports = function (sequelize, DataTypes) {
         const values = Object.assign({}, this.get());
         return values;
     }
-    Group.sync({alter: true});
+    //Group.sync({alter: true});
     return Group;
 };
 

@@ -48,7 +48,7 @@ module.exports = function (sequelize, DataTypes) {
         const values = Object.assign({}, this.get());
         return values;
     }
-    Wallet.sync({alter: true});
+    //Wallet.sync({alter: true});
 
     return Wallet;
 };
