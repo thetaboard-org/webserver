@@ -18,11 +18,6 @@ const transactionHistory = function (server, options, next) {
         method: 'GET',
         handler: async (req, h) => {
             try {
-                // get price
-                const prices = await got(`${req.theta_explorer_api_domain}/api/price/all`, theta_explorer_api_params);
-                const tfuel_price = JSON.parse(prices.body).body.filter(x => x['_id'] === 'TFUEL')[0]['price'];
-                const theta_price = JSON.parse(prices.body).body.filter(x => x['_id'] === 'THETA')[0]['price'];
-
                 // get transaction history
                 const transaction_history = [];
                 const pageNumber = req.query.pageNumber ? Number(req.query.pageNumber) : 1;
@@ -79,18 +74,7 @@ const transactionHistory = function (server, options, next) {
                             "theta": x["theta"],
                             "tfuel": x["tfuel"],
                             "theta-amount": x["theta"] / wei_divider,
-                            "theta-price": x["theta"] / wei_divider * theta_price,
                             "tfuel-amount": x["tfuel"] / wei_divider,
-                            "tfuel-price": x["tfuel"] / wei_divider * tfuel_price,
-                            "values": [{
-                                "type": "theta",
-                                "amount": x["theta"] / wei_divider,
-                                "value": x["theta"] / wei_divider * theta_price
-                            }, {
-                                "type": "tfuel",
-                                "amount": x["tfuel"] / wei_divider,
-                                "value": x["tfuel"] / wei_divider * tfuel_price
-                            }]
                         }
                     }
                 }));

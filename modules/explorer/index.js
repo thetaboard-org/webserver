@@ -142,11 +142,7 @@ const explorer = function (server, options, next) {
                 if (!wallet_adr) {
                     throw "No wallet address provided";
                 }
-                // get price
-                const prices = await got(`${req.theta_explorer_api_domain}/api/price/all`, theta_explorer_api_params);
-                const tfuel_price = JSON.parse(prices.body).body.filter(x => x['_id'] === 'TFUEL')[0]['price'];
-                const theta_price = JSON.parse(prices.body).body.filter(x => x['_id'] === 'THETA')[0]['price'];
-                response.push(...await getWalletInfo(wallet_adr, tfuel_price, theta_price, req));
+                response.push(...await getWalletInfo(wallet_adr, req));
                 return h.response({wallets: response})
             } catch (error) {
                 return h.response(error.response.body).code(400);
@@ -176,14 +172,9 @@ const explorer = function (server, options, next) {
                     throw "No Group Found";
                 }
 
-                // get price
-                const prices = await got(`${req.theta_explorer_api_domain}/api/price/all`, theta_explorer_api_params);
-                const tfuel_price = JSON.parse(prices.body).body.filter(x => x['_id'] === 'TFUEL')[0]['price'];
-                const theta_price = JSON.parse(prices.body).body.filter(x => x['_id'] === 'THETA')[0]['price'];
-
                 const promises = group.Wallets.map(async (wallet) => {
                     const wallet_adr = wallet.address;
-                    let wallets = await getWalletInfo(wallet_adr, tfuel_price, theta_price, req);
+                    let wallets = await getWalletInfo(wallet_adr, req);
                     if (wallets && wallets.length) {
                         response.push(...wallets);
                     }
@@ -203,11 +194,6 @@ const explorer = function (server, options, next) {
             const wallet_adr = req.params.wallet_addr;
 
             try {
-                // get price
-                const prices = await got(`${req.theta_explorer_api_domain}/api/price/all`, theta_explorer_api_params);
-                const tfuel_price = JSON.parse(prices.body).body.filter(x => x['_id'] === 'TFUEL')[0]['price'];
-                const theta_price = JSON.parse(prices.body).body.filter(x => x['_id'] === 'THETA')[0]['price'];
-
                 // get transaction history
                 const transaction_history = [];
                 const pageNumber = req.query.pageNumber ? req.query.pageNumber.toString() : '1';
@@ -269,11 +255,9 @@ const explorer = function (server, options, next) {
                             "value": [{
                                 "type": "theta",
                                 "amount": values["coins"]["thetawei"] / wei_divider,
-                                "value": values["coins"]["thetawei"] / wei_divider * theta_price
                             }, {
                                 "type": "tfuel",
                                 "amount": values["coins"]["tfuelwei"] / wei_divider,
-                                "value": values["coins"]["tfuelwei"] / wei_divider * tfuel_price
                             }
                             ]
                         }
@@ -288,7 +272,7 @@ const explorer = function (server, options, next) {
 }
 
 
-const getWalletInfo = async function (wallet_adr, tfuel_price, theta_price, req) {
+const getWalletInfo = async function (wallet_adr, req) {
     let response = [];
     // get theta holding
     const holding = await got(`${req.theta_explorer_api_domain}/api/account/${wallet_adr}`, theta_explorer_api_params);
@@ -297,8 +281,6 @@ const getWalletInfo = async function (wallet_adr, tfuel_price, theta_price, req)
     response.push({
         "amount": balances['thetawei'] / wei_divider,
         "type": "wallet",
-        "value": balances['thetawei'] / wei_divider * theta_price,
-        "market_price": theta_price,
         "wallet_address": wallet_adr,
         "node_address": null,
         "currency": "theta"
@@ -306,8 +288,6 @@ const getWalletInfo = async function (wallet_adr, tfuel_price, theta_price, req)
     response.push({
         "amount": balances['tfuelwei'] / wei_divider,
         "type": "wallet",
-        "value": balances['tfuelwei'] / wei_divider * tfuel_price,
-        "market_price": tfuel_price,
         "wallet_address": wallet_adr,
         "node_address": null,
         "currency": "tfuel"
@@ -323,18 +303,12 @@ const getWalletInfo = async function (wallet_adr, tfuel_price, theta_price, req)
         }
         if (x["type"] == "gcp") {
             result.type = "Guardian Node";
-            result.market_price = theta_price;
-            result.value = x["amount"] / wei_divider * theta_price;
             result.currency = "theta";
         } else  if (x["type"] == "eenp") {
             result.type = "Elite Edge Node";
-            result.market_price = tfuel_price;
-            result.value = x["amount"] / wei_divider * tfuel_price;
             result.currency = "tfuel";
         } else  if (x["type"] == "vcp") {
             result.type = "Validator Node";
-            result.market_price = theta_price;
-            result.value = x["amount"] / wei_divider * theta_price;
             result.currency = "theta";
         }
         return result;
