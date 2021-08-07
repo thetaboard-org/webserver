@@ -1,6 +1,6 @@
 const Boom = require('@hapi/boom')
 const got = require('got');
-const tfuel_stake_host = process.env.NODE_ENV === 'production' ? "http://147.135.65.57:8002" : "http://localhost:8002";
+const tfuel_stake_host = process.env.NODE_ENV === 'production' ? "http://51.81.155.154:8002" : "http://localhost:8002";
 const MAX_PUBLIC = 10;
 const MAX_AFFILIATE = 5;
 const MINIMUM_TFUEL_AVAILABLE = 1500000;
