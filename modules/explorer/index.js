@@ -182,7 +182,7 @@ const explorer = function (server, options, next) {
 
                 return Promise.all(promises).then(() => h.response({wallets: response}));
             } catch (error) {
-                return h.response(error.response.body).code(400);
+                return h.response(error).code(400);
             }
         }
     });
@@ -265,7 +265,7 @@ const explorer = function (server, options, next) {
 
                 return h.response({transactions: transaction_history, pagination: pagination})
             } catch (error) {
-                return h.response(error.response.body).code(400);
+                return h.response(error).code(400);
             }
         }
     });
