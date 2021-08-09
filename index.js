@@ -30,7 +30,13 @@ const manifest = {
                         ignoredModels: [__dirname + '/models/index.js'], // OPTIONAL: paths/globs to ignore files
                         sequelize: new Sequelize('thetaboard', secrets.database.user, process.env.MYSQL_PASS, {
                             host: process.env.DB,
-                            dialect: 'mariadb'
+                            dialect: 'mariadb',
+                            pool: {
+                                max: 10,
+                                min: 0,
+                                acquire: 30000,
+                                idle: 10000
+                            }
                         }), // sequelize instance
                         sync: true, // sync models - default false
                     },
