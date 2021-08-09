@@ -1,6 +1,7 @@
 const got = require('got');
 const dateFormat = require("dateformat");
 const Sequelize = require('sequelize');
+const Boom = require("@hapi/boom");
 const Op = Sequelize.Op;
 
 const wei_divider = 1000000000000000000;
@@ -99,7 +100,7 @@ const explorer = function (server, options, next) {
             try {
                 return await server.methods.getPrice(start_date, end_date, currency);
             } catch (error) {
-                return h.response(error).code(400);
+                return Boom.badRequest(error);
             }
         }
     });
@@ -113,7 +114,7 @@ const explorer = function (server, options, next) {
                 const stake = await got(`${req.theta_explorer_api_domain}/api/stake/totalAmount?type=theta`, theta_explorer_api_params);
                 return h.response(JSON.parse(stake.body).body);
             } catch (error) {
-                return h.response(error.response.body).code(400);
+                return Boom.badRequest(error);
             }
         }
     });
@@ -127,7 +128,7 @@ const explorer = function (server, options, next) {
                 const stake = await got(`${req.theta_explorer_api_domain}/api/stake/totalAmount?type=tfuel`, theta_explorer_api_params);
                 return h.response(JSON.parse(stake.body).body);
             } catch (error) {
-                return h.response(error.response.body).code(400);
+                return Boom.badRequest(error);
             }
         }
     });
@@ -145,7 +146,7 @@ const explorer = function (server, options, next) {
                 response.push(...await getWalletInfo(wallet_adr, req));
                 return h.response({wallets: response})
             } catch (error) {
-                return h.response(error.response.body).code(400);
+                return Boom.badRequest(error);
             }
         }
     });
@@ -182,7 +183,7 @@ const explorer = function (server, options, next) {
 
                 return Promise.all(promises).then(() => h.response({wallets: response}));
             } catch (error) {
-                return h.response(error).code(400);
+                return Boom.badRequest(error);
             }
         }
     });
@@ -265,7 +266,7 @@ const explorer = function (server, options, next) {
 
                 return h.response({transactions: transaction_history, pagination: pagination})
             } catch (error) {
-                return h.response(error).code(400);
+                return Boom.badRequest(error);
             }
         }
     });
