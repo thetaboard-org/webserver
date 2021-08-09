@@ -33,18 +33,18 @@ module.exports = function (sequelize, DataTypes) {
             }
         },
         {
-            associate: function(models) { //create associations/foreign key constraint
-                Users.hasMany(models.Tfuelstakes, {foreignKeyConstraint: true});
-                Users.hasMany(models.Wallets, {foreignKeyConstraint: true});
-                Users.hasMany(models.Affiliates, {foreignKeyConstraint: true});
-            }
-        },
-        {
             indexes: [{
                 fields: ['email'],
                 unique: true,
             }]
         });
+
+    User.associate = function(models) { //create associations/foreign key constraint
+        User.hasMany(models.Affiliate, { foreignKey: 'userId', foreignKeyConstraint: true });
+        User.hasMany(models.Group, { foreignKey: 'userId', foreignKeyConstraint: true });
+        User.hasMany(models.Wallet, { foreignKey: 'userId', foreignKeyConstraint: true });
+        User.hasMany(models.Tfuelstake, { foreignKey: 'userId', foreignKeyConstraint: true });
+    }
 
     User.prototype.toJSON = function () {
         const values = Object.assign({}, this.get());

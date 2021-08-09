@@ -1,5 +1,6 @@
 module.exports = function (sequelize, DataTypes) {
-    const Affiliate = sequelize.define('Affiliate', {
+    const Affiliate = sequelize.define('Affiliate', 
+        {
             //link user record
             userId: {
                 type: DataTypes.INTEGER,
@@ -23,27 +24,25 @@ module.exports = function (sequelize, DataTypes) {
             },
         },
         {
-            associate: function(models) { //create associations/foreign key constraint
-                Affiliate.belongsTo(models.Users, {
-                    foreignKey: {
-                      name: 'userId'
-                    }
-                });
-                Affiliate.hasMany(models.PublicEdgeNodes, {foreignKeyConstraint: true});
-
-            }
-        },
-        {
             indexes: [{
                 fields: ['name'],
                 unique: true,
             },
             {
                 fields: ['userId'],
-                unique: false,
+                unique: false
             }]
         }
     );
+
+    Affiliate.associate = function(models) { //create associations/foreign key constraint
+        Affiliate.belongsTo(models.User, {
+            foreignKey: {
+                name: 'userId'
+            }
+        });
+        Affiliate.hasMany(models.PublicEdgeNode, {foreignKeyConstraint: true});
+    }
 
     Affiliate.prototype.toJSON = function () {
         const toKebabCase = (str) => {
@@ -66,6 +65,8 @@ module.exports = function (sequelize, DataTypes) {
             }, {})
         }
     }
+
+    //Affiliate.sync({alter: true});
     return Affiliate;
 };
 

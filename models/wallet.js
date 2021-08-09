@@ -20,31 +20,35 @@ module.exports = function (sequelize, DataTypes) {
             }
         },
         {
-            associate: function(models) { //create associations/foreign key constraint
-                Wallet.belongsTo(models.Users, {
-                    foreignKey: {
-                      name: 'userId'
-                    }
-                  });
-            }
-        },
-        {
             indexes: [{
                 fields: ['address'],
                 unique: false,
             },
             {
                 fields: ['userId'],
-                unique: false,
+                unique: false
             }]
         });
+
+
+    Wallet.associate = function (models) {
+        Wallet.belongsTo(models.User, {
+            foreignKey: {
+                name: 'userId'
+            }
+        });
+        Wallet.belongsToMany(models.Group, { 
+         through: 'WalletGroups',
+         foreignKey: 'groupId'
+        });
+    }
+      
 
     Wallet.prototype.toJSON = function () {
         const values = Object.assign({}, this.get());
         return values;
     }
+    //Wallet.sync({alter: true});
+
     return Wallet;
-
-
 };
-
