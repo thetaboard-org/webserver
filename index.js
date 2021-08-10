@@ -32,6 +32,11 @@ const manifest = {
                         sequelize: new Sequelize('thetaboard', secrets.database.user, process.env.MYSQL_PASS, {
                             host: process.env.DB,
                             dialect: 'mariadb',
+                            dialectOptions: {
+                                options: {
+                                    requestTimeout: 3000
+                                }
+                            },
                             pool: {
                                 max: 100,
                                 min: 5,

@@ -100,6 +100,7 @@ const explorer = function (server, options, next) {
             try {
                 return await server.methods.getPrice(start_date, end_date, currency);
             } catch (error) {
+                console.log(error);
                 return Boom.badRequest(error);
             }
         }
@@ -114,6 +115,7 @@ const explorer = function (server, options, next) {
                 const stake = await got(`${req.theta_explorer_api_domain}/api/stake/totalAmount?type=theta`, theta_explorer_api_params);
                 return h.response(JSON.parse(stake.body).body);
             } catch (error) {
+                console.log(error);
                 return Boom.badRequest(error);
             }
         }
@@ -128,6 +130,7 @@ const explorer = function (server, options, next) {
                 const stake = await got(`${req.theta_explorer_api_domain}/api/stake/totalAmount?type=tfuel`, theta_explorer_api_params);
                 return h.response(JSON.parse(stake.body).body);
             } catch (error) {
+                console.log(error);
                 return Boom.badRequest(error);
             }
         }
@@ -146,6 +149,7 @@ const explorer = function (server, options, next) {
                 response.push(...await getWalletInfo(wallet_adr, req));
                 return h.response({wallets: response})
             } catch (error) {
+                console.log(error);
                 return Boom.badRequest(error);
             }
         }
@@ -183,6 +187,7 @@ const explorer = function (server, options, next) {
 
                 return Promise.all(promises).then(() => h.response({wallets: response}));
             } catch (error) {
+                console.log(error);
                 return Boom.badRequest(error);
             }
         }
