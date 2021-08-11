@@ -40,7 +40,7 @@ const manifest = {
                             pool: {
                                 max: 100,
                                 min: 5,
-                                acquire: 30000,
+                                acquire: 60000,
                                 idle: 10000
                             }
                         }), // sequelize instance
