@@ -21,7 +21,20 @@ const manifest = {
             '@hapi/bell', // oauth with third party
             '@hapi/cookie', //session in cookies
             '@hapi/jwt', // auth with jwt,
-
+            'hapijs-status-monitor', // monitoring on /status route,
+            {
+                plugin: require('laabr'),// logging
+                options: {
+                    formats: {
+                        'log': '{ message::message, timestamp::time[iso], level::level, environment::environment }',
+                        'request': '{ message::message, timestamp::time[iso], level::level, environment::environment }',
+                        'request-error': '{ error::error, timestamp::time[iso], level::level, environment::environment }',
+                        'response': ':time[iso] :method :remoteAddress :url :status :payload (:responseTime ms)',
+                        'uncaught': '{ error::error, timestamp::time[iso], level::level, environment::environment, source::error[source] }'
+                    },
+                    indent: 0
+                }
+            },
             {
                 plugin: require('hapi-sequelizejs'),
                 options: [
