@@ -3,6 +3,11 @@ const dateFormat = require("dateformat");
 const Sequelize = require('sequelize');
 const Boom = require("@hapi/boom");
 const Op = Sequelize.Op;
+const thetajs = require("@thetalabs/theta-js");
+const nft_abi = require("./nft_abi.json")
+const URL = require("url").URL;
+
+global.fetch = require("node-fetch");
 
 const wei_divider = 1000000000000000000;
 
@@ -169,8 +174,8 @@ const explorer = function (server, options, next) {
 
                 let group = await req.getModel('Group').findOne(
                     {
-                        where: { 'uuid': group_uuid },
-                        include: { all: true }
+                        where: {'uuid': group_uuid},
+                        include: {all: true}
                     }
                 );
                 if (!group) {
@@ -275,6 +280,39 @@ const explorer = function (server, options, next) {
             }
         }
     });
+
+
+    server.route({
+        path: '/wallet-nft/{wallet_adr}',
+        method: 'GET',
+        handler: async (req, h) => {
+            const wallet_adr = req.params.wallet_adr;
+            const provider = new thetajs.providers.HttpProvider(thetajs.networks.ChainIds.Mainnet);
+            const get_contracts_for_wallet = await got(`https://www.thetascan.io/api/nft/?address=${wallet_adr.toLowerCase()}`);
+            const contracts_adr = JSON.parse(get_contracts_for_wallet.body);
+            let NFTs = []
+            if (contracts_adr) {
+                NFTs = Promise.all(contracts_adr.map(async (contract_idx) => {
+                    const contract = new thetajs.Contract(contract_idx['contract'], nft_abi, provider);
+                    const obj = {
+                        "type": null, // type is checked bellow
+                        "url": await contract.tokenURI(contract_idx['token']),
+                        "name": await contract.name(),
+                        "symbol": await contract.symbol(),
+                    };
+                    //check if it is a valid URL or not, if yes then type is image
+                    try {
+                        new URL(obj['url']);
+                        obj['type'] = 'image';
+                    } catch (err) {
+                        obj['type'] = 'unknown';
+                    }
+                    return obj;
+                }));
+            }
+            return NFTs;
+        }
+    });
 }
 
 
@@ -310,10 +348,10 @@ const getWalletInfo = async function (wallet_adr, req) {
         if (x["type"] == "gcp") {
             result.type = "Guardian Node";
             result.currency = "theta";
-        } else  if (x["type"] == "eenp") {
+        } else if (x["type"] == "eenp") {
             result.type = "Elite Edge Node";
             result.currency = "tfuel";
-        } else  if (x["type"] == "vcp") {
+        } else if (x["type"] == "vcp") {
             result.type = "Validator Node";
             result.currency = "theta";
         }
