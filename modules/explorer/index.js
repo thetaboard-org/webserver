@@ -290,27 +290,50 @@ const explorer = function (server, options, next) {
             const provider = new thetajs.providers.HttpProvider(thetajs.networks.ChainIds.Mainnet);
             const get_contracts_for_wallet = await got(`https://www.thetascan.io/api/nft/?address=${wallet_adr.toLowerCase()}`);
             const contracts_adr = JSON.parse(get_contracts_for_wallet.body);
+
+            const get_nft_info_721 = async (contract_adr, token_id) => {
+                const contract = new thetajs.Contract(contract_adr, nft_abi, provider);
+                const token_uri = await contract.tokenURI(token_id);
+
+
+                const obj = {
+                    "type": null, // type is best effort to guess
+                    "url": null,
+                    "name": null,
+                };
+
+                // if contract is a json, then it is a NFT made by thetadrop
+                // we assume we need to fetch it to get more info about it
+                if (token_uri.endsWith(".json")) {
+                    try {
+                        const nft_metadata_api = await fetch(token_uri)
+                        const nft_metadata = await nft_metadata_api.json();
+                        obj['url'] = nft_metadata['image'];
+                        obj['name'] = nft_metadata['name'];
+                    } catch (e) {
+                        // URL is invalid. Nothing we can do about it...
+                        return null;
+                    }
+                } else {
+                    obj['url'] = token_uri;
+                    obj['name'] = await contract.name();
+                }
+                try {
+                    new URL(obj['url']);
+                    obj['type'] = 'image';
+                } catch (err) {
+                    obj['type'] = 'unknown';
+                }
+                return obj;
+            }
+
             let NFTs = []
             if (contracts_adr) {
-                NFTs = Promise.all(contracts_adr.map(async (contract_idx) => {
-                    const contract = new thetajs.Contract(contract_idx['contract'], nft_abi, provider);
-                    const obj = {
-                        "type": null, // type is checked bellow
-                        "url": await contract.tokenURI(contract_idx['token']),
-                        "name": await contract.name(),
-                        "symbol": await contract.symbol(),
-                    };
-                    //check if it is a valid URL or not, if yes then type is image
-                    try {
-                        new URL(obj['url']);
-                        obj['type'] = 'image';
-                    } catch (err) {
-                        obj['type'] = 'unknown';
-                    }
-                    return obj;
-                }));
+                NFTs = await Promise.all(contracts_adr.map(async (contract_idx) => {
+                    return get_nft_info_721(contract_idx['contract'], contract_idx['token']);
+                }))
             }
-            return NFTs;
+            return NFTs.filter((x) => !!x);
         }
     });
 }
