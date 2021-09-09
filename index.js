@@ -122,6 +122,12 @@ const manifest = {
                 }
             },
             {
+                plugin: './transactionExport',
+                routes: {
+                    prefix: '/transaction-exports.csv'
+                }
+            },
+            {
                 plugin: './coinbaseHistory',
                 routes: {
                     prefix: '/coinbase-histories'
