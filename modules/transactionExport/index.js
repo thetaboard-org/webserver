@@ -34,16 +34,8 @@ const transactionExport = function (server, options, next) {
             method: 'GET',
             path: '/',
             options: {
-                // auth: {
-                //     strategy: 'token',
-                // },
                 handler: async (req, h) => {
                     try {
-                        // const user = await req.getModel('User').findOne({where: {'email': req.auth.credentials.email}});
-                        // if (!user) {
-                        //     throw "Request invalid";
-                        // }
-
                         const start_date_raw = req.query["startDate"];
                         const end_date_raw = req.query["endDate"];
                         if (!start_date_raw || !end_date_raw) {
@@ -52,7 +44,7 @@ const transactionExport = function (server, options, next) {
 
                         const wallet_addresses = req.query["wallets"].split(',');
                         if (!wallet_addresses) {
-                            throw "Request invalid: missing wallet addresse";
+                            throw "Request invalid: missing wallet address";
                         }
 
                         const currency = req.query["currency"];
