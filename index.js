@@ -126,6 +126,12 @@ const manifest = {
                 routes: {
                     prefix: '/coinbase-histories'
                 }
+            },
+            {
+                plugin: './nft',
+                routes: {
+                    prefix: '/nft'
+                }
             }
         ]
     }
