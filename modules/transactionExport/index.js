@@ -3,8 +3,32 @@ const stringify = require('csv-stringify');
 const {Op} = require("sequelize");
 const wei_divider = 1000000000000000000;
 const dateFormat = require("dateformat");
+const got = require('got');
+
+// a middleware function with no mount path. This code is executed for every request to the router
+const api_token = "API_TOKEN" in process.env && process.env.API_TOKEN ? process.env.API_TOKEN : null;
+const theta_explorer_api_params = {
+    https: {rejectUnauthorized: false},
+}
+if (api_token) {
+    theta_explorer_api_params.headers = {"x-api-token": api_token}
+}
 
 const transactionExport = function (server, options, next) {
+
+    server.ext('onRequest', async (req, h) => {
+        if (req.query && req.query.env) {
+            if (req.query.env === 'testnet') {
+                req.theta_explorer_api_domain = "https://guardian-testnet-explorer.thetatoken.org:8443";
+            } else if (req.query.env === 'smart-contracts') {
+                req.theta_explorer_api_domain = "https://smart-contracts-sandbox-explorer.thetatoken.org:8443";
+            }
+        } else {
+            req.theta_explorer_api_domain = "https://explorer.thetatoken.org:8443";
+        }
+        return h.continue;
+    })
+
     server.route([
         {
             method: 'GET',
@@ -19,6 +43,7 @@ const transactionExport = function (server, options, next) {
                         // if (!user) {
                         //     throw "Request invalid";
                         // }
+
                         const start_date_raw = req.query["startDate"];
                         const end_date_raw = req.query["endDate"];
                         if (!start_date_raw || !end_date_raw) {
@@ -33,6 +58,42 @@ const transactionExport = function (server, options, next) {
                         const currency = req.query["currency"];
                         if (!currency) {
                             throw "Request invalid: missing currency";
+                        }
+
+                        // First we check if 50% of total wallets are staked with thetaboard
+                        // then we build a array of json for each stake and see if it is thetaboard EN or not
+                        const public_model = req.getModel('PublicEdgeNode');
+                        const private_model = req.getModel('Tfuelstake');
+                            const tfuel_staked = [].concat(...(await Promise.all(wallet_addresses.map(async (wallet_adr) => {
+                            const holding = await got(`${req.theta_explorer_api_domain}/api/stake/${wallet_adr}?types[]=eenp`, theta_explorer_api_params);
+                            const balances = await JSON.parse(holding.body);
+                            return Promise.all(balances.body.sourceRecords.map(async (x) => {
+                                const is_public = await public_model.count({
+                                    where: {
+                                        summary: {[Op.like]: x["holder"] + '%'}
+                                    }
+                                });
+                                const is_private = await private_model.count({
+                                    where: {
+                                        summary: {[Op.like]: x["holder"] + '%'}
+                                    }
+                                });
+                                return { "amount": x['amount'] / wei_divider, "is_stake_with_us": is_public || is_private }
+                            }));
+                        }))));
+
+                        // compute the sum of all staked for thetaboard vs not thetaboard ENs
+                        const sum_with_us_and_not = tfuel_staked.reduce((acc, el, i) => {
+                            if (el["is_stake_with_us"]) {
+                                acc[0] += el['amount'];
+                            } else {
+                                acc[1] += el['amount'];
+                            }
+                            return acc;
+                        }, [0, 0]);
+                        // Finally return error if not
+                        if (sum_with_us_and_not[0] < sum_with_us_and_not[1]) {
+                            return Boom.unauthorized("");
                         }
 
                         const start_date_tx = new Date(`${start_date_raw}:`).getTime()/1000;
@@ -50,8 +111,6 @@ const transactionExport = function (server, options, next) {
                             if (transaction["type"] == 0) {
                                 transaction["typeName"] = "Rewards";
                             } else if(transaction["type"] == 2) {
-                                //check if type 2 
-                                //check is in or out for add or substract
                                 transaction["typeName"] = "Transfer";
                             } else if (transaction["type"] === 9) {
                                 transaction["typeName"] = "Withdraw Stake";
@@ -59,7 +118,7 @@ const transactionExport = function (server, options, next) {
                                 transaction["typeName"] = "Deposit Stake";
                             }
                             
-                            return buildPayload(transaction, prices, currency);
+                            return buildPayload(transaction, prices, currency, wallet_addresses);
                         }));
 
                         return stringify(finalList, {
@@ -92,7 +151,7 @@ formatDate = function(date) {
     return [year, month, day].join('-');
 };
 
-buildPayload = function(transaction, prices, currency) {
+buildPayload = function(transaction, prices, currency, wallet_addresses) {
     let result = {
         "Transaction Hash": transaction["hash"],
         "Timestamp": dateFormat(new Date(Number(transaction["tx_timestamp"]) * 1000), "isoDateTime"),
@@ -105,6 +164,19 @@ buildPayload = function(transaction, prices, currency) {
     result[`Daily Average Theta Price in ${currency}`] = prices.theta_price;
     result[`Daily Average Tfuel Price in ${currency}`] = prices.tfuel_price;
     result[`Rewards Value in ${currency}`] = transaction["type"] == 0 ? prices.tfuel_price * transaction["tfuel"] / wei_divider : "NA";
+    if (transaction["fee_tfuel"] != null) {
+        if (transaction["type"] == 9 || wallet_addresses.includes(transaction["from_address"])) {
+            result[`Fee in Tfuel`] = transaction.fee_tfuel / wei_divider;
+            result[`Fee in ${currency}`] = prices.tfuel_price * transaction.fee_tfuel / wei_divider;        
+        } else {
+            result[`Fee in Tfuel`] = "NA";
+            result[`Fee in ${currency}`] = "NA";
+        }
+    } else {
+        result[`Fee in Tfuel`] = "NA";
+        result[`Fee in ${currency}`] = "NA";
+    }
+
     return result;
 };
 
