@@ -6,6 +6,7 @@ const Op = Sequelize.Op;
 const thetajs = require("@thetalabs/theta-js");
 const nft_abi = require("./nft_abi.json")
 const URL = require("url").URL;
+const IMG_EXTENSIONS = ["ase", "art", "bmp", "blp", "cd5", "cit", "cpt", "cr2", "cut", "dds", "dib", "djvu", "egt", "exif", "gif", "gpl", "grf", "icns", "ico", "iff", "jng", "jpeg", "jpg", "jfif", "jp2", "jps", "lbm", "max", "miff", "mng", "msp", "nitf", "ota", "pbm", "pc1", "pc2", "pc3", "pcf", "pcx", "pdn", "pgm", "PI1", "PI2", "PI3", "pict", "pct", "pnm", "pns", "ppm", "psb", "psd", "pdd", "psp", "px", "pxm", "pxr", "qfx", "raw", "rle", "sct", "sgi", "rgb", "int", "bw", "tga", "tiff", "tif", "vtf", "xbm", "xcf", "xpm", "3dv", "amf", "ai", "awg", "cgm", "cdr", "cmx", "dxf", "e2d", "egt", "eps", "fs", "gbr", "odg", "svg", "stl", "vrml", "x3d", "sxd", "v2d", "vnd", "wmf", "emf", "art", "xar", "png", "webp", "jxr", "hdp", "wdp", "cur", "ecw", "iff", "lbm", "liff", "nrrd", "pam", "pcx", "pgf", "sgi", "rgb", "rgba", "bw", "int", "inta", "sid", "ras", "sun", "tga"];
 
 global.fetch = require("node-fetch");
 
@@ -317,7 +318,11 @@ const explorer = function (server, options, next) {
 
                 // if contract is a json, then it is a NFT made by thetadrop
                 // we assume we need to fetch it to get more info about it
-                if (parsed.pathname.endsWith(".json")) {
+                const extension = parsed.pathname.split('.').pop();
+                if (IMG_EXTENSIONS.includes(extension)) {
+                    obj['url'] = token_uri;
+                    obj['name'] = `${await contract.name()}`;
+                } else {
                     try {
                         const nft_metadata_api = await fetch(token_uri)
                         const nft_metadata = await nft_metadata_api.json();
@@ -327,9 +332,6 @@ const explorer = function (server, options, next) {
                         // URL is invalid. Nothing we can do about it...
                         return null;
                     }
-                } else {
-                    obj['url'] = token_uri;
-                    obj['name'] = `${await contract.name()}`;
                 }
                 try {
                     new URL(obj['url']);
