@@ -8,7 +8,9 @@ const LOOP_EVERY = 30 * 1000 // 30 sec
 
 const TNT20ContractABI = require("./ThetaboardNFT_abi.json");
 const TNT20ContractAddress = "0x053CD0e05e6df3990ee35BD7a640B5AA92e77176";
-const config = require(`${__dirname.split('webserver')[0]}webserver/config/secrets`)
+// check if we are in docker or just in working dir.
+const working_dir = __dirname.includes('webserver') ? 'webserver' : 'app';
+const config = require(`${__dirname.split(working_dir)[0]}${working_dir}/config/secrets`)
 const privateKey = config.wallets.smart_contracts;
 
 

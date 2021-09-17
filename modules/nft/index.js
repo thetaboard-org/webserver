@@ -1,5 +1,5 @@
 const Boom = require("@hapi/boom");
-
+const IDS = require("./ids")
 
 const NIFTIES = function (server, options, next) {
     server.route([
@@ -13,7 +13,7 @@ const NIFTIES = function (server, options, next) {
                                 "image": "https://nft.thetaboard.io/nft/assets/thetaboard/early_adopter.png",
                                 "name": "Thetaboard Early Adopter",
                                 "description": "This badge was created for early adopters of the thetaboard community!",
-                                "token_id": req.params.NFT_ID
+                                "token_id": IDS[req.params.NFT_ID]
                             }
                         } catch (e) {
                             if (e && e.errors) {
