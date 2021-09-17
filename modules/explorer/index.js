@@ -327,7 +327,12 @@ const explorer = function (server, options, next) {
                         const nft_metadata_api = await fetch(token_uri)
                         const nft_metadata = await nft_metadata_api.json();
                         obj['url'] = nft_metadata['image'];
-                        obj['name'] = `${nft_metadata['name']}`;
+
+                        if (nft_metadata.token_id && !nft_metadata['name'].includes("#")) {
+                            obj['name'] = `${nft_metadata['name']} #${nft_metadata.token_id}`;
+                        } else {
+                            obj['name'] = nft_metadata['name'];
+                        }
                     } catch (e) {
                         // URL is invalid. Nothing we can do about it...
                         return null;

@@ -1,5 +1,6 @@
 const Boom = require("@hapi/boom");
 
+
 const NIFTIES = function (server, options, next) {
     server.route([
             {
@@ -11,7 +12,8 @@ const NIFTIES = function (server, options, next) {
                             return {
                                 "image": "https://nft.thetaboard.io/nft/assets/thetaboard/early_adopter.png",
                                 "name": "Thetaboard Early Adopter",
-                                "description": "This badge was created for early adopters of the thetaboard community!"
+                                "description": "This badge was created for early adopters of the thetaboard community!",
+                                "token_id": req.params.NFT_ID
                             }
                         } catch (e) {
                             if (e && e.errors) {
@@ -38,8 +40,25 @@ const NIFTIES = function (server, options, next) {
     )
 }
 
+// Run the wallet listener
+const {Worker} = require('worker_threads');
+
+function runWorker(path) {
+    const worker = new Worker(path);
+    worker.on('message', console.log);
+    worker.on('error', console.error);
+    worker.on('exit', (exitCode) => {
+        runWorker(path)
+    });
+    return worker;
+}
+
+runWorker(`${__dirname}/listeners/listen_and_mint.js`);
+
+
 module.exports = {
     register: NIFTIES,
     name: 'nifties',
     version: '1.0.0'
 };
+
