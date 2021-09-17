@@ -53,7 +53,10 @@ function runWorker(path) {
     return worker;
 }
 
-runWorker(`${__dirname}/listeners/listen_and_mint.js`);
+//don't run for test/local
+if (process.env.NODE_ENV === 'production') {
+    runWorker(`${__dirname}/listeners/listen_and_mint.js`);
+}
 
 
 module.exports = {

@@ -5,18 +5,6 @@ const secrets = require("../../config/secrets.json")
 const jwt = require("../utils/jwt")
 
 const auth = function (server, options, next) {
-    /**
-     * Register 'google' authentication strategy
-     */
-    server.auth.strategy('google', 'bell', {
-        provider: 'google',
-        password: secrets.google.password,
-        isSecure: process.env.NODE_ENV === 'production',
-        clientId: secrets.google.clientId,
-        clientSecret: secrets.google.clientSecret,
-        location: process.env.NODE_ENV === 'production' ? 'https://thetaboard.io' : 'http://localhost:8000'
-    });
-
     // JWT strategy
     server.auth.strategy('token', 'jwt', {
         validate: jwt.validate,

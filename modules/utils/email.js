@@ -4,7 +4,7 @@ const nodemailer = require("nodemailer"),
 
 
 const smtpTransport = nodemailer.createTransport(`smtps://${encodeURIComponent(Config.email.username)}:${encodeURIComponent(Config.email.password)}@smtp.gmail.com:465");`)
-const host = process.env.NODE_ENV === 'production' ? 'https://thetaboard.io' : 'http://localhost:8000'
+const host = process.env.NODE_ENV === 'development' ? 'http://localhost:8000' : 'https://thetaboard.io'
 
 const injectTemplate = (str, obj) => str.replace(/\${(.*?)}/g, (x, g) => obj[g]);
 
