@@ -40,25 +40,6 @@ const NIFTIES = function (server, options, next) {
     )
 }
 
-// Run the wallet listener
-const {Worker} = require('worker_threads');
-
-function runWorker(path) {
-    const worker = new Worker(path);
-    worker.on('message', console.log);
-    worker.on('error', console.error);
-    worker.on('exit', (exitCode) => {
-        runWorker(path)
-    });
-    return worker;
-}
-
-//don't run for test/local
-if (process.env.NODE_ENV === 'production') {
-    runWorker(`${__dirname}/listeners/listen_and_mint.js`);
-}
-
-
 module.exports = {
     register: NIFTIES,
     name: 'nifties',
