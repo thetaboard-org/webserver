@@ -307,7 +307,14 @@ const explorer = function (server, options, next) {
             const get_nft_info_721 = async (contract_adr, token_id) => {
                 const contract = new thetajs.Contract(contract_adr, nft_abi, provider);
                 const token_uri = await contract.tokenURI(token_id);
-                const parsed = new URL(token_uri);
+                let parsed;
+                try {
+                    parsed = new URL(token_uri);
+                } catch (e) {
+                    console.error("Could not get NFT");
+                    console.error(e);
+                    return null;
+                }
 
 
                 const obj = {
@@ -350,16 +357,7 @@ const explorer = function (server, options, next) {
             let NFTs = []
             if (contracts_for_wallet) {
                 NFTs = await Promise.all(contracts_for_wallet.map(async (contract_idx) => {
-                    let nft_info;
-                    try {
-                        nft_info = await get_nft_info_721(contract_idx['contract'], contract_idx['token']);
-                    } catch (e) {
-                        // something went wrong
-                        console.error("could not get NFT: ");
-                        console.error(e);
-                        return null;
-                    }
-                    return nft_info;
+                    return get_nft_info_721(contract_idx['contract'], contract_idx['token']);
                 }))
             }
             return NFTs.filter((x) => !!x);
