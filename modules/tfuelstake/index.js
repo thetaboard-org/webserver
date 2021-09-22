@@ -1,7 +1,7 @@
 const Boom = require('@hapi/boom')
 const got = require('got');
 
-const tfuel_stake_host = !process.env.NODE_ENV || process.env.NODE_ENV ? "http://localhost:8002" : "http://135.148.122.167:8002";
+const tfuel_stake_host = !process.env.NODE_ENV || process.env.NODE_ENV === 'development' ? "http://localhost:8002" : "http://135.148.122.167:8002";
 
 const tfuelstake = function (server, options, next) {
     server.route([
