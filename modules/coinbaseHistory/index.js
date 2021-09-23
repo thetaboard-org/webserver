@@ -39,10 +39,20 @@ const coinbaseHistory = function (server, options, next) {
                         [literal(`SUM(if(tx_timestamp > ${tsLastMonth} AND (${GN_CONDITION}), tfuel, 0))`), 'last_month_gn'],
                         [literal(`SUM(if(tx_timestamp > ${tsLastSixMonths} AND (${GN_CONDITION}), tfuel, 0))`), 'last_six_months_gn'],
 
+                        [literal(`COUNT(if(tx_timestamp > ${tsYesterday} AND (${GN_CONDITION}) , 1, null))`), 'last_day_count_gn'],
+                        [literal(`COUNT(if(tx_timestamp > ${tsLastWeek} AND (${GN_CONDITION}), 1, null))`), 'last_week_count_gn'],
+                        [literal(`COUNT(if(tx_timestamp > ${tsLastMonth} AND (${GN_CONDITION}), 1, null))`), 'last_month_count_gn'],
+                        [literal(`COUNT(if(tx_timestamp > ${tsLastSixMonths} AND (${GN_CONDITION}), 1, null))`), 'last_six_months_count_gn'],
+
                         [literal(`SUM(if(tx_timestamp > ${tsYesterday} AND (${GN_CONDITION_DIFF}), tfuel, 0))`), 'last_day_en'],
                         [literal(`SUM(if(tx_timestamp > ${tsLastWeek} AND (${GN_CONDITION_DIFF}), tfuel, 0))`), 'last_week_en'],
                         [literal(`SUM(if(tx_timestamp > ${tsLastMonth} AND (${GN_CONDITION_DIFF}), tfuel, 0))`), 'last_month_en'],
-                        [literal(`SUM(if(tx_timestamp > ${tsLastSixMonths} AND (${GN_CONDITION_DIFF}), tfuel, 0))`), 'last_six_months_en']
+                        [literal(`SUM(if(tx_timestamp > ${tsLastSixMonths} AND (${GN_CONDITION_DIFF}), tfuel, 0))`), 'last_six_months_en'],
+
+                        [literal(`COUNT(if(tx_timestamp > ${tsYesterday} AND (${GN_CONDITION_DIFF}) , 1, null))`), 'last_day_count_en'],
+                        [literal(`COUNT(if(tx_timestamp > ${tsLastWeek} AND (${GN_CONDITION_DIFF}), 1, null))`), 'last_week_count_en'],
+                        [literal(`COUNT(if(tx_timestamp > ${tsLastMonth} AND (${GN_CONDITION_DIFF}), 1, null))`), 'last_month_count_en'],
+                        [literal(`COUNT(if(tx_timestamp > ${tsLastSixMonths} AND (${GN_CONDITION_DIFF}), 1, null))`), 'last_six_months_count_en'],
                     ],
                     group: "to_address",
                     where: {
@@ -75,6 +85,7 @@ const coinbaseHistory = function (server, options, next) {
                                 "attributes": {
                                     "type": type,
                                     "time-scale": "last_day",
+                                    "count": x.dataValues["last_day_count_" + type],
                                     "tfuel": x.dataValues["last_day_" + type],
                                     "to-address": x["to_address"],
                                     "value": x.dataValues["last_day_" + type] / wei_divider,
@@ -87,6 +98,7 @@ const coinbaseHistory = function (server, options, next) {
                                 "attributes": {
                                     "type": type,
                                     "time-scale": "last_week",
+                                    "count": x.dataValues["last_week_count_" + type],
                                     "tfuel": x.dataValues["last_week_" + type],
                                     "to-address": x["to_address"],
                                     "value": x.dataValues["last_week_" + type] / wei_divider,
@@ -99,6 +111,7 @@ const coinbaseHistory = function (server, options, next) {
                                 "attributes": {
                                     "type": type,
                                     "time-scale": "last_month",
+                                    "count": x.dataValues["last_month_count_" + type],
                                     "tfuel": x.dataValues["last_month_" + type],
                                     "to-address": x["to_address"],
                                     "value": x.dataValues["last_month_" + type] / wei_divider,
@@ -111,6 +124,7 @@ const coinbaseHistory = function (server, options, next) {
                                 "attributes": {
                                     "type": type,
                                     "time-scale": "last_six_months",
+                                    "count": x.dataValues["last_six_months_count_" + type],
                                     "tfuel": x.dataValues["last_six_months_" + type],
                                     "to-address": x["to_address"],
                                     "value": x.dataValues["last_six_months_" + type] / wei_divider,
