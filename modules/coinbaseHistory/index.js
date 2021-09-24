@@ -1,6 +1,5 @@
 const Boom = require('@hapi/boom');
 const {Op, literal} = require("sequelize");
-const dateFormat = require("dateformat");
 const got = require('got');
 const wei_divider = 1000000000000000000;
 
@@ -29,8 +28,9 @@ const coinbaseHistory = function (server, options, next) {
                 const tsLastWeek = ts - (7 * 24 * 3600);
                 const tsLastMonth = ts - (31 * 24 * 3600);
                 const tsLastSixMonths = ts - (6 * 31 * 24 * 3600);
-                const GN_CONDITION = "tfuel % 12 = 0 OR tfuel % 11.88 = 0 OR tfuel % 11.76 = 0 OR tfuel % 11.64 = 0 OR tfuel % 11.52 = 0";
-                const GN_CONDITION_DIFF = "tfuel % 12 != 0 AND tfuel % 11.88 != 0 AND tfuel % 11.76 != 0 AND tfuel % 11.64 != 0 AND tfuel % 11.52 != 0";
+                const GN_REWARDS = [12, 11.88, 11.76, 11.64, 11.52];
+                const GN_CONDITION = GN_REWARDS.map((x) => `tfuel % ${x * wei_divider} = 0`).join(' OR ');
+                const GN_CONDITION_DIFF = GN_REWARDS.map((x) => `tfuel % ${x * wei_divider} != 0`).join(' AND ');
                 const query = {
                     attributes: [
                         'to_address',
