@@ -1,5 +1,4 @@
 const Boom = require('@hapi/boom')
-const jwt = require('../utils/jwt')
 
 const affiliate = function (server, options, next) {
     server.route([

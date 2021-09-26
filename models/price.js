@@ -5,7 +5,6 @@ const Moment = require('moment');
 
 module.exports = function (sequelize, DataTypes) {
     const Price = sequelize.define('Price', {
-            //link user record
             date: {
                 type: DataTypes.DATEONLY,
                 allowNull: false,

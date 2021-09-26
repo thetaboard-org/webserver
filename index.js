@@ -138,6 +138,18 @@ const manifest = {
                 routes: {
                     prefix: '/nft'
                 }
+            },
+            {
+                plugin: './drop',
+                routes: {
+                    prefix: '/drops'
+                }
+            },
+            {
+                plugin: './artist',
+                routes: {
+                    prefix: '/artists'
+                }
             }
         ]
     }
