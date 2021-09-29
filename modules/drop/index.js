@@ -38,13 +38,24 @@ const drop = function (server, options, next) {
                     try {
                         const rawDrop = await req.getModel('Drop').findOne({where: {'id': req.params.id}});
                         let response = {"data": {}};
-                        let drop = rawDrop.toJSON();
-                        drop.relationships = { 
-                            artist: {
-                                data: { "type": "artist", "id": rawDrop.artistId }
+
+                        if (rawDrop) {
+                            let drop = rawDrop.toJSON();
+                            drop.relationships = { 
+                                artist: {
+                                    data: { "type": "artist", "id": rawDrop.artistId }
+                                }
                             }
+                            const rawNFTs = await req.getModel('NFT').findAll({where: {'dropId': rawDrop.id}});
+                            if (rawNFTs.length) {
+                                drop.relationships.nfts = { 
+                                    data: rawNFTs.map((rawNFT) => ({ "type": "nft", "id": rawNFT.id }))
+                                };
+                            }
+                            response.data = drop;
                         }
-                        response.data.push(drop);
+                        
+    
                         return response;
                     } catch (e) {
                         if (e && e.errors) {

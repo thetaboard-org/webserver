@@ -134,9 +134,15 @@ const manifest = {
                 }
             },
             {
-                plugin: './nft',
+                plugin: './nifties',
                 routes: {
                     prefix: '/nft'
+                }
+            },
+            {
+                plugin: './nft',
+                routes: {
+                    prefix: '/nfts'
                 }
             },
             {

@@ -38,6 +38,7 @@ module.exports = function (sequelize, DataTypes) {
 
     Artist.associate = function(models) {
         Artist.hasMany(models.Drop, { foreignKey: 'artistId', foreignKeyConstraint: true });
+        Artist.hasMany(models.NFT, { foreignKey: 'artistId', foreignKeyConstraint: true });
     }
 
     Artist.prototype.toJSON = function () {

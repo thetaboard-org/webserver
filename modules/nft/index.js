@@ -1,48 +1,79 @@
-const Boom = require("@hapi/boom");
-const IDS = require("./ids")
+const Boom = require('@hapi/boom')
 
-const NIFTIES = function (server, options, next) {
+const nft = function (server, options, next) {
     server.route([
-            {
-                method: 'get',
-                path: '/{NFT_NAME}/{NFT_ID}',
-                options: {
-                    handler: async (req, h) => {
-                        try {
-                            return {
-                                "image": "https://nft.thetaboard.io/nft/assets/thetaboard/early_adopter.png",
-                                "name": "Thetaboard Early Adopter",
-                                "description": "This badge was created for early adopters of the thetaboard community!",
-                                "token_id": IDS[req.params.NFT_ID]
-                            }
-                        } catch (e) {
-                            if (e && e.errors) {
-                                e = e.errors[0].message;
-                            }
-                            return Boom.badRequest(e);
+        {
+            path: '/',
+            method: 'GET',
+            options: {
+                handler: async function (req, h) {
+                    try {
+                        const nfts = [];
+                        if (req.query.artistId) {
+                            nfts = await req.getModel('NFT').findAll({where: {'artistId': req.query.artistId}});
+                        } else if (req.query.dropId) {
+                            nfts = await req.getModel('NFT').findAll({where: {'dropId': req.query.dropId}});
+                        } else {
+                            nfts = await req.getModel('NFT').findAll();
                         }
+                        let response = {"data": []};
+                        nfts.forEach(rawNFT => {
+                            let nft = rawNFT.toJSON();
+                            nft.relationships = {};
+                            nft.relationships = { 
+                                artist: {
+                                    data: { "type": "artist", "id": rawNFT.artistId }
+                                },
+                                drop: {
+                                    data: { "type": "drop", "id": rawNFT.dropId }
+                                }
+                            }
+                            response.data.push(drop);
+                        });
+                        return response;
+                    } catch (e) {
+                        if (e && e.errors) {
+                            e = e.errors[0].message;
+                        }
+                        return Boom.badRequest(e);
                     }
                 }
-            },
-            {
-                method: 'GET',
-                path: '/assets/{param*}',
-                options: {
-                    handler: function (req, h) {
-
-                        return h.file(__dirname + "/assets/" + req.params.param, {
-                            confine: false
-                        });
-                    },
+            }
+        },
+        {
+            path: '/{id}',
+            method: 'GET',
+            options: {
+                handler: async function (req, h) {
+                    try {
+                        const rawNFT = await req.getModel('NFT').findOne({where: {'id': req.params.id}});
+                        let response = {"data": {}};
+                        let drop = rawNFT.toJSON();
+                        drop.relationships = { 
+                            artist: {
+                                data: { "type": "artist", "id": rawNFT.artistId }
+                            },
+                            drop: {
+                                data: { "type": "drop", "id": rawNFT.dropId }
+                            }
+                        }
+                        response.data = drop;
+                        return response;
+                    } catch (e) {
+                        if (e && e.errors) {
+                            e = e.errors[0].message;
+                        }
+                        return Boom.badRequest(e);
+                    }
                 }
             }
-        ]
-    )
-}
-
-module.exports = {
-    register: NIFTIES,
-    name: 'nifties',
-    version: '1.0.0'
+        },
+    ]);
 };
 
+
+module.exports = {
+    register: nft,
+    name: 'nft',
+    version: '1.0.0'
+};
