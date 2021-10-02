@@ -46,10 +46,10 @@ const drop = function (server, options, next) {
                                     data: { "type": "artist", "id": rawDrop.artistId }
                                 }
                             }
-                            const rawNFTs = await req.getModel('NFT').findAll({where: {'dropId': rawDrop.id}});
+                            const rawNFTs = await req.getModel('NFT').findAll({where: {'dropId': drop.id}});
                             if (rawNFTs.length) {
                                 drop.relationships.nfts = { 
-                                    data: rawNFTs.map((rawNFT) => ({ "type": "nft", "id": rawNFT.id }))
+                                    data: rawNFTs.map((nft) => ({ "type": "nft", "id": nft.id }))
                                 };
                             }
                             response.data = drop;

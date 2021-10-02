@@ -71,6 +71,7 @@ module.exports = function (sequelize, DataTypes) {
                 name: 'dropId'
             }
         });
+        NFT.hasMany(models.NFTAsset, { foreignKey: 'nftId', foreignKeyConstraint: true });
     }
 
     NFT.prototype.toJSON = function () {

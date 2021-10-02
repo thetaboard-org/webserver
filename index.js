@@ -156,6 +156,12 @@ const manifest = {
                 routes: {
                     prefix: '/artists'
                 }
+            },
+            {
+                plugin: './nftAsset',
+                routes: {
+                    prefix: '/nft-assets'
+                }
             }
         ]
     }
