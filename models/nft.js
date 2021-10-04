@@ -1,64 +1,64 @@
 module.exports = function (sequelize, DataTypes) {
     const NFT = sequelize.define('NFT', {
-        //link artist record
-        artistId: {
-            type: DataTypes.INTEGER,
-            allowNull: false,
-        },
-        //link drop record
-        dropId: {
-            type: DataTypes.INTEGER,
-            allowNull: false,
-        },
-        smallDescription: {
-            type: DataTypes.STRING,
-            allowNull: false
-        },
-        description: {
-            type: DataTypes.TEXT,
-            allowNull: false
-        },
-        name: {
-            type: DataTypes.STRING,
-            allowNull: false
-        },
-        image: {
-            type: DataTypes.STRING,
-            allowNull: false
-        },
-        nftContractId: {
-            type: DataTypes.STRING,
-            allowNull: false
-        },
-        nftSellController: {
-            type: DataTypes.STRING,
-            allowNull: false
-        },
-        editionNumber: {
-            type: DataTypes.INTEGER,
-            allowNull: true
-        },
-        type: {
-            type: DataTypes.ENUM,
-            values: ['open', 'limited','auction'],
-            defaultValue: 'open',
-            allowNull: false
-        },
-        price: {
-            type: DataTypes.FLOAT,
-            allowNull: false
-        },
-    },
-    {
-        indexes: [{
-            fields: ['artistId'],
-            unique: false
+            //link artist record
+            artistId: {
+                type: DataTypes.INTEGER,
+                allowNull: false,
+            },
+            //link drop record
+            dropId: {
+                type: DataTypes.INTEGER,
+                allowNull: true, // null are allowed for NFT like badges, which are not sold as part of a drop
+            },
+            smallDescription: {
+                type: DataTypes.STRING,
+                allowNull: false
+            },
+            description: {
+                type: DataTypes.TEXT,
+                allowNull: false
+            },
+            name: {
+                type: DataTypes.STRING,
+                allowNull: false
+            },
+            image: {
+                type: DataTypes.STRING,
+                allowNull: false
+            },
+            nftContractId: {
+                type: DataTypes.STRING,
+                allowNull: false
+            },
+            nftSellController: {
+                type: DataTypes.STRING,
+                allowNull: true
+            },
+            editionNumber: {
+                type: DataTypes.INTEGER,
+                allowNull: true
+            },
+            type: {
+                type: DataTypes.ENUM,
+                values: ['open', 'limited', 'auction'],
+                defaultValue: 'open',
+                allowNull: false
+            },
+            price: {
+                type: DataTypes.FLOAT,
+                allowNull: false
+            },
         },
         {
-            fields: ['dropId'],
-            unique: false
-        }]
-    });
+            indexes: [{
+                fields: ['artistId'],
+                unique: false
+            },
+                {
+                    fields: ['dropId'],
+                    unique: false
+                }]
+        });
 
     NFT.associate = function (models) {
         NFT.belongsTo(models.Artist, {
@@ -71,7 +71,8 @@ module.exports = function (sequelize, DataTypes) {
                 name: 'dropId'
             }
         });
-        NFT.hasMany(models.NFTAsset, { foreignKey: 'nftId', foreignKeyConstraint: true });
+        NFT.hasMany(models.NFTAsset, {foreignKey: 'nftId', foreignKeyConstraint: true});
+        NFT.hasOne(models.NftTokenIds, {foreignKey: 'nftId', foreignKeyConstraint: true});
     }
 
     NFT.prototype.toJSON = function () {
@@ -97,6 +98,32 @@ module.exports = function (sequelize, DataTypes) {
     }
     // NFT.sync({alter: true});
 
+    NFT.prototype.toERC721 = function (TOKEN_ID = null) {
+        const NFT = this;
+        const TNT721 = {
+            "image": NFT.image,
+            "name": NFT.name,
+            "description": NFT.description,
+            "artist": null,
+            "drop": null,
+            "assets": null,
+            "attributes": null
+        }
+        if (NFT.Artist) {
+            TNT721.artist = NFT.Artist.toJSON().attributes;
+        }
+        if (NFT.Drop) {
+            TNT721.drop = NFT.Drop.toJSON().attributes;
+        }
+        if (NFT.NFTAssets) {
+            TNT721.assets = NFT.NFTAssets.map((x) => x.toJSON().attributes);
+        }
+        if (TOKEN_ID && NFT.NftTokenId) {
+            const array = JSON.parse(NFT.NftTokenId.arrayOfIds)
+            TNT721.token_id = array[TOKEN_ID]
+        }
+        return TNT721
+    }
     return NFT;
 };
 
