@@ -62,7 +62,7 @@ module.exports = function (sequelize, DataTypes) {
             }, {})
         }
     }
-    Tfuelstake.sync({alter: true});
+    // Tfuelstake.sync({alter: true});
     Tfuelstake.afterFind(async (models, something, somethingElse) => {
         models.map(update_stake_amount);
         return models;

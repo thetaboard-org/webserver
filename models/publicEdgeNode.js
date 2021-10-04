@@ -68,7 +68,7 @@ module.exports = function (sequelize, DataTypes) {
             }, {})
         }
     }
-    PublicEdgeNode.sync({alter: true});
+    // PublicEdgeNode.sync({alter: true});
 
     PublicEdgeNode.afterFind(async (models) => {
         models.map(update_stake_amount);
