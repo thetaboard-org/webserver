@@ -1,7 +1,7 @@
 const Boom = require('@hapi/boom')
 const got = require('got');
 
-const tfuel_stake_host = !process.env.NODE_ENV || process.env.NODE_ENV ? "http://localhost:8002" : "http://135.148.122.167:8002";
+const tfuel_stake_host = !process.env.NODE_ENV || process.env.NODE_ENV === 'development' ? "http://localhost:8002" : "http://135.148.122.167:8002";
 
 const tfuelstake = function (server, options, next) {
     server.route([
@@ -20,6 +20,17 @@ const tfuelstake = function (server, options, next) {
                         }
                         //create edge node
                         const EN = await setupPrivateEdgeNode(req, user)
+
+                        // do not block, but add rewards to it
+                        const en_addr = EN.summary.slice(0, 42);
+                        got(`http://142.44.213.241:8002/edgeNode/write_key?EN_SERVER=${tfuel_stake_host}/edgeNode&EN_ID=${EN.edgeNodeId}`)
+                            .then(() => {
+                                return got(`http://142.44.213.241:8002/edgeNode/do_split?EN_ADDR=${en_addr}&EN_ID=${EN.edgeNodeId}&REWARD_ADDR=0xa078C2852eb6e455f97EeC21e39F8ef24173Df60&SPLIT_REWARD=300`)
+                            }).then(() => {
+                            EN.splitRewards = true;
+                            return EN.save();
+                        });
+                        // this return happen before split is done
                         return {"data": EN.toJSON()};
                     } catch (e) {
                         if (e && e.errors) {
