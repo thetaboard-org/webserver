@@ -13,7 +13,7 @@ const NIFTIES = function (server, options, next) {
                             const TOKEN_ID = req.params.TOKEN_ID;
                             let NFT;
                             const [Artist, Drop, Assets, NftTokenId] = [req.getModel('Artist'), req.getModel('Drop'), req.getModel('NFTAsset'), req.getModel('NftTokenIds')]
-                            if (NFT_ID === "early_adopter") {
+                            if (NFT_ID === "thetaboard-first") {
                                 NFT = await req.getModel('NFT').findOne({
                                     where: {name: "Thetaboard Early Adopter"},
                                     include: [Artist, Drop, Assets, NftTokenId]

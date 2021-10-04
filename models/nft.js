@@ -104,19 +104,22 @@ module.exports = function (sequelize, DataTypes) {
             "image": NFT.image,
             "name": NFT.name,
             "description": NFT.description,
-            "artist": null,
-            "drop": null,
-            "assets": null,
-            "attributes": null
+            "properties": {
+                "artist": null,
+                "drop": null,
+                "assets": null,
+            },
+            "attributes": null,
+            "token_id": null
         }
         if (NFT.Artist) {
-            TNT721.artist = NFT.Artist.toJSON().attributes;
+            TNT721.properties.artist = NFT.Artist.toJSON().attributes;
         }
         if (NFT.Drop) {
-            TNT721.drop = NFT.Drop.toJSON().attributes;
+            TNT721.properties.drop = NFT.Drop.toJSON().attributes;
         }
         if (NFT.NFTAssets) {
-            TNT721.assets = NFT.NFTAssets.map((x) => x.toJSON().attributes);
+            TNT721.properties.assets = NFT.NFTAssets.map((x) => x.toJSON().attributes);
         }
         if (TOKEN_ID && NFT.NftTokenId) {
             const array = JSON.parse(NFT.NftTokenId.arrayOfIds)

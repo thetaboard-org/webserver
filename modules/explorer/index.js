@@ -306,7 +306,10 @@ const explorer = function (server, options, next) {
 
             const get_nft_info_721 = async (contract_adr, token_id) => {
                 const contract = new thetajs.Contract(contract_adr, nft_abi, provider);
-                const token_uri = await contract.tokenURI(token_id);
+                let token_uri = await contract.tokenURI(token_id);
+                if (token_uri.includes('thetaboard')) {
+                    token_uri = token_uri.replace('https://nft.thetaboard.io', 'http://localhost:8000')
+                }
                 let parsed;
                 try {
                     parsed = new URL(token_uri);
@@ -316,42 +319,67 @@ const explorer = function (server, options, next) {
                     return null;
                 }
 
-
-                const obj = {
-                    "type": null, // type is best effort to guess
-                    "url": null,
+                const TNT721 = {
+                    "image": null,
                     "name": null,
-                };
+                    "description": null,
+                    "properties": {
+                        "artist": null,
+                        "drop": null,
+                        "assets": [],
+                    },
+                    "attributes": null,
+                    "token_id": null
+                }
 
                 // if contract is a json, then it is a NFT made by thetadrop
                 // we assume we need to fetch it to get more info about it
                 const extension = parsed.pathname.split('.').pop();
                 if (IMG_EXTENSIONS.includes(extension)) {
-                    obj['url'] = token_uri;
-                    obj['name'] = `${await contract.name()}`;
+                    TNT721['image'] = token_uri;
+                    TNT721['name'] = `${await contract.name()}`;
                 } else {
                     try {
                         const nft_metadata_api = await fetch(token_uri)
                         const nft_metadata = await nft_metadata_api.json();
-                        obj['url'] = nft_metadata['image'];
-
+                        TNT721['image'] = nft_metadata['image'];
                         if (nft_metadata.token_id && !nft_metadata['name'].includes("#")) {
-                            obj['name'] = `${nft_metadata['name']} #${nft_metadata.token_id}`;
+                            TNT721['name'] = `${nft_metadata['name']} #${nft_metadata.token_id}`;
                         } else {
-                            obj['name'] = nft_metadata['name'];
+                            TNT721['name'] = nft_metadata['name'];
+                        }
+                        TNT721.description = nft_metadata.description;
+                        if (nft_metadata.properties) {
+                            TNT721.properties.artist = nft_metadata.properties.artist;
+                            TNT721.properties.drop = nft_metadata.properties.drop;
+                            TNT721.properties.assets = nft_metadata.properties.assets;
+                        }
+                        // handle thetadrop unique features....
+                        if (nft_metadata.animation_url) {
+                            TNT721.properties.assets = TNT721.properties.assets || [];
+                            TNT721.properties.assets.push({
+                                description: null,
+                                name: null,
+                                type: 'video',
+                                asset: nft_metadata.animation_url
+                            });
+                        }
+                        if (nft_metadata.token_id) {
+                            TNT721.token_id = nft_metadata.token_id
+                        } else if (nft_metadata['name'].includes("#")) {
+                            try {
+                                const number = nft_metadata['name'].split('#');
+                                TNT721.token_id = Number(number[1]);
+                            } catch (e) {
+                                //    couldn't get token id
+                            }
                         }
                     } catch (e) {
                         // URL is invalid. Nothing we can do about it...
                         return null;
                     }
                 }
-                try {
-                    new URL(obj['url']);
-                    obj['type'] = 'image';
-                } catch (err) {
-                    obj['type'] = 'unknown';
-                }
-                return obj;
+                return TNT721;
             }
 
             let NFTs = []
