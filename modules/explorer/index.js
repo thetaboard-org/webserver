@@ -307,7 +307,7 @@ const explorer = function (server, options, next) {
             const get_nft_info_721 = async (contract_adr, token_id) => {
                 const contract = new thetajs.Contract(contract_adr, nft_abi, provider);
                 let token_uri = await contract.tokenURI(token_id);
-                if (token_uri.includes('thetaboard')) {
+                if (token_uri.includes('thetaboard') && process.env.NODE_ENV === 'development') {
                     token_uri = token_uri.replace('https://nft.thetaboard.io', 'http://localhost:8000')
                 }
                 let parsed;
