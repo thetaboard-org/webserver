@@ -96,7 +96,7 @@ module.exports = function (sequelize, DataTypes) {
             }, {})
         }
     }
-    // NFT.sync({alter: true});
+    //NFT.sync({alter: true});
 
     NFT.prototype.toERC721 = function (TOKEN_ID = null) {
         const NFT = this;

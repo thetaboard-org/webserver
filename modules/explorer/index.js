@@ -288,7 +288,6 @@ const explorer = function (server, options, next) {
         method: 'GET',
         handler: async (req, h) => {
             const wallet_adr = req.params.wallet_adr;
-            const provider = new thetajs.providers.HttpProvider(thetajs.networks.ChainIds.Mainnet);
 
             const contracts_for_wallet = [];
             let index = 0;
@@ -303,85 +302,6 @@ const explorer = function (server, options, next) {
                 }
             }
 
-
-            const get_nft_info_721 = async (contract_adr, token_id) => {
-                const contract = new thetajs.Contract(contract_adr, nft_abi, provider);
-                let token_uri = await contract.tokenURI(token_id);
-                if (token_uri.includes('thetaboard') && process.env.NODE_ENV === 'development') {
-                    token_uri = token_uri.replace('https://nft.thetaboard.io', 'http://localhost:8000')
-                }
-                let parsed;
-                try {
-                    parsed = new URL(token_uri);
-                } catch (e) {
-                    console.error("Could not get NFT");
-                    console.error(e);
-                    return null;
-                }
-
-                const TNT721 = {
-                    "image": null,
-                    "name": null,
-                    "description": null,
-                    "properties": {
-                        "artist": null,
-                        "drop": null,
-                        "assets": [],
-                    },
-                    "attributes": null,
-                    "token_id": null
-                }
-
-                // if contract is a json, then it is a NFT made by thetadrop
-                // we assume we need to fetch it to get more info about it
-                const extension = parsed.pathname.split('.').pop();
-                if (IMG_EXTENSIONS.includes(extension)) {
-                    TNT721['image'] = token_uri;
-                    TNT721['name'] = `${await contract.name()}`;
-                } else {
-                    try {
-                        const nft_metadata_api = await fetch(token_uri)
-                        const nft_metadata = await nft_metadata_api.json();
-                        TNT721['image'] = nft_metadata['image'];
-                        if (nft_metadata.token_id && !nft_metadata['name'].includes("#")) {
-                            TNT721['name'] = `${nft_metadata['name']} #${nft_metadata.token_id}`;
-                        } else {
-                            TNT721['name'] = nft_metadata['name'];
-                        }
-                        TNT721.description = nft_metadata.description;
-                        if (nft_metadata.properties) {
-                            TNT721.properties.artist = nft_metadata.properties.artist;
-                            TNT721.properties.drop = nft_metadata.properties.drop;
-                            TNT721.properties.assets = nft_metadata.properties.assets;
-                        }
-                        // handle thetadrop unique features....
-                        if (nft_metadata.animation_url) {
-                            TNT721.properties.assets = TNT721.properties.assets || [];
-                            TNT721.properties.assets.push({
-                                description: null,
-                                name: null,
-                                type: 'video',
-                                asset: nft_metadata.animation_url
-                            });
-                        }
-                        if (nft_metadata.token_id) {
-                            TNT721.token_id = nft_metadata.token_id
-                        } else if (nft_metadata['name'].includes("#")) {
-                            try {
-                                const number = nft_metadata['name'].split('#');
-                                TNT721.token_id = Number(number[1]);
-                            } catch (e) {
-                                //    couldn't get token id
-                            }
-                        }
-                    } catch (e) {
-                        // URL is invalid. Nothing we can do about it...
-                        return null;
-                    }
-                }
-                return TNT721;
-            }
-
             let NFTs = []
             if (contracts_for_wallet) {
                 NFTs = await Promise.all(contracts_for_wallet.map(async (contract_idx) => {
@@ -391,7 +311,26 @@ const explorer = function (server, options, next) {
             return NFTs.filter((x) => !!x);
         }
     });
+
+    server.route({
+        path: '/wallet-info/{contract_adr}/{token_id}',
+        method: 'GET',
+        handler: async (req, h) => {
+            const contract_adr = req.params.contract_adr;
+            const token_id = req.params.token_id;
+            if (!contract_adr) {
+                throw "No contract address Found";
+            }
+            try {
+                return get_nft_info_721(contract_adr, token_id);
+            } catch (error) {
+                console.log(error);
+                return Boom.badRequest(error);
+            }
+        }
+    });
 }
+
 
 
 const getWalletInfo = async function (wallet_adr, req) {
@@ -436,6 +375,90 @@ const getWalletInfo = async function (wallet_adr, req) {
         return result;
     }));
     return response
+}
+
+const get_nft_info_721 = async (contract_adr, token_id) => {
+    const provider = new thetajs.providers.HttpProvider(thetajs.networks.ChainIds.Mainnet);
+    const contract = new thetajs.Contract(contract_adr, nft_abi, provider);
+    let token_uri = await contract.tokenURI(token_id);
+    if (token_uri.includes('thetaboard')) {
+        token_uri = token_uri.replace('https://nft.thetaboard.io', 'http://localhost:8000')
+    }
+    let parsed;
+    try {
+        parsed = new URL(token_uri);
+    } catch (e) {
+        console.error("Could not get NFT");
+        console.error(e);
+        return null;
+    }
+
+    const TNT721 = {
+        "contract_adr": contract_adr,
+        "original_token_id": token_id,
+        "image": null,
+        "name": null,
+        "description": null,
+        "properties": {
+            "artist": null,
+            "drop": null,
+            "assets": [],
+        },
+        "attributes": null,
+        "token_id": null,
+    }
+
+    // if contract is a json, then it is a NFT made by thetadrop
+    // we assume we need to fetch it to get more info about it
+    const extension = parsed.pathname.split('.').pop();
+    if (IMG_EXTENSIONS.includes(extension)) {
+        TNT721['image'] = token_uri;
+        TNT721['name'] = `${await contract.name()}`;
+    } else {
+        try {
+            const nft_metadata_api = await fetch(token_uri)
+            const nft_metadata = await nft_metadata_api.json();
+            TNT721['image'] = nft_metadata['image'];
+            if (nft_metadata.token_id && !nft_metadata['name'].includes("#")) {
+                TNT721['name'] = `${nft_metadata['name']} #${nft_metadata.token_id}`;
+            } else {
+                TNT721['name'] = nft_metadata['name'];
+            }
+            TNT721.description = nft_metadata.description;
+            if (nft_metadata.properties) {
+                TNT721.properties.artist = nft_metadata.properties.artist;
+                TNT721.properties.drop = nft_metadata.properties.drop;
+                TNT721.properties.assets = nft_metadata.properties.assets;
+            }
+            if (nft_metadata.attributes) {
+                TNT721.attributes = nft_metadata.attributes;
+            }
+            // handle thetadrop unique features....
+            if (nft_metadata.animation_url) {
+                TNT721.properties.assets = TNT721.properties.assets || [];
+                TNT721.properties.assets.push({
+                    description: null,
+                    name: null,
+                    type: 'video',
+                    asset: nft_metadata.animation_url
+                });
+            }
+            if (nft_metadata.token_id) {
+                TNT721.token_id = nft_metadata.token_id
+            } else if (nft_metadata['name'].includes("#")) {
+                try {
+                    const number = nft_metadata['name'].split('#');
+                    TNT721.token_id = Number(number[1]);
+                } catch (e) {
+                    //    couldn't get token id
+                }
+            }
+        } catch (e) {
+            // URL is invalid. Nothing we can do about it...
+            return null;
+        }
+    }
+    return TNT721;
 }
 
 
