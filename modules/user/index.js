@@ -147,9 +147,9 @@ const user = function (server, options, next) {
                 handler: async function (req, h) {
                     try {
                         const body = JSON.parse(req.payload);
-                        if (body && body.password && req.auth.credentials.email) {        
+                        if (body && body.password && req.auth.credentials.email) {
                             const user = await req.getModel('User').findOne({where: {'email': req.auth.credentials.email}});
-                            if(!user) {
+                            if (!user) {
                                 throw "An error occured";
                             }
                             user.password = await bcrypt.hash(body.password, saltRounds);
@@ -192,10 +192,7 @@ const user = function (server, options, next) {
                                 where: {
                                     'id': request.params.id
                                 },
-                                include: { 
-                                    all: true,
-                                    nested: true
-                                }
+                                include: ['Wallets', 'Groups', 'Affiliates', 'Tfuelstakes']
                             });
                         const response = {
                             data: {
@@ -212,29 +209,30 @@ const user = function (server, options, next) {
 
                         if (user.Wallets.length) {
                             response.data.relationships.wallets = {
-                                data: user.Wallets.map((x) => ({ "type": "wallet", "id": x.id }))    
+                                data: user.Wallets.map((x) => ({"type": "wallet", "id": x.id}))
                             }
                         }
 
                         if (user.Affiliates.length) {
                             response.data.relationships.affiliates = {
-                                data: user.Affiliates.map((x) => ({ "type": "affiliate", "id": x.id }))    
+                                data: user.Affiliates.map((x) => ({"type": "affiliate", "id": x.id}))
                             }
                         }
 
                         if (user.Tfuelstakes.length) {
                             response.data.relationships.tfuelstakes = {
-                                data: user.Tfuelstakes.map((x) => ({ "type": "tfuelstakes", "id": x.id }))    
+                                data: user.Tfuelstakes.map((x) => ({"type": "tfuelstakes", "id": x.id}))
                             }
                         }
 
                         if (user.Groups.length) {
                             response.data.relationships.groups = {
-                                data: user.Groups.map((x) => ({ "type": "group", "id": x.id }))    
+                                data: user.Groups.map((x) => ({"type": "group", "id": x.id}))
                             }
                         }
                         return response;
                     } catch (e) {
+                        debugger
                         if (e && e.errors) {
                             e = e.errors[0].message;
                         }

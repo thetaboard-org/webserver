@@ -43,21 +43,6 @@ const auth = function (server, options, next) {
             }
         }
     });
-
-    server.route({
-        method: 'GET',
-        path: '/secure',
-        options: {
-            auth: {
-                strategy: 'token',
-            },
-            handler: function (request, h) {
-                return "yes"
-
-            }
-        }
-    });
-
 }
 
 

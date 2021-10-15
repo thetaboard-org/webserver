@@ -1,5 +1,9 @@
 const Boom = require("@hapi/boom");
-const IDS = require("./ids")
+const fs = require("fs");
+const crypto = require("crypto");
+const path = require('path');
+const imageHash = require('node-image-hash');
+
 
 const NIFTIES = function (server, options, next) {
     server.route([
@@ -32,39 +36,102 @@ const NIFTIES = function (server, options, next) {
                     }
                 },
             },
-        {
-            method: 'get',
-            path: '/{NFT_ID}',
-            options: {
-                handler: async (req, h) => {
-                    try {
-                        const NFT_ID = req.params.NFT_ID;
-                        if (NFT_ID === "early_adopter") {
-                            return {
-                                "image": "https://nft.thetaboard.io/nft/assets/thetaboard/early_adopter.png",
-                                "name": "Thetaboard Early Adopter",
-                                "description": "This badge was created for early adopters of the thetaboard community!",
+            {
+                method: 'get',
+                path: '/{NFT_ID}',
+                options: {
+                    handler: async (req, h) => {
+                        try {
+                            const NFT_ID = req.params.NFT_ID;
+                            if (NFT_ID === "early_adopter") {
+                                return {
+                                    "image": "https://nft.thetaboard.io/nft/assets/thetaboard/early_adopter.png",
+                                    "name": "Thetaboard Early Adopter",
+                                    "description": "This badge was created for early adopters of the thetaboard community!",
+                                }
                             }
+                        } catch (e) {
+                            if (e && e.errors) {
+                                e = e.errors[0].message;
+                            }
+                            return Boom.badRequest(e);
                         }
-                    } catch (e) {
-                        if (e && e.errors) {
-                            e = e.errors[0].message;
-                        }
-                        return Boom.badRequest(e);
                     }
                 }
-            }
-        },
-        {
-            method: 'GET',
-            path: '/assets/{param*}',
-            options: {
-                handler: function (req, h) {
+            },
+            {
+                method: "POST",
+                path: '/assets/upload',
+                options: {
+                    payload: {
+                        output: 'stream',
+                        parse: true,
+                        allow: 'multipart/form-data',
+                        multipart: true
+                    },
+                    handler: async (req, res) => {
+                        const data = req.payload;
+                        if (data.file) {
+                            let name;
+                            let uploadPath = '';
+                            const filename = data.file.hapi.filename;
+                            if (filename.includes('/')) {
+                                const split = filename.split('/');
+                                uploadPath = split.slice(0, -1).join('/') + '/';
+                            }
+                            name = crypto.randomBytes(20).toString('hex')
+                            const relativePath = `/assets/${uploadPath}${name}`
+                            const filepath = `${__dirname}${relativePath}`;
 
-                    return h.file(__dirname + "/assets/" + req.params.param, {
-                        confine: false
-                    });
-                },
+
+                            async function saveFile() {
+                                const file = fs.createWriteStream(filepath);
+                                return new Promise((resolve, reject) => {
+                                    file.on('error', (err) => {
+                                        reject(err);
+                                    });
+
+                                    data.file.pipe(file);
+
+                                    data.file.on('end', async (err) => {
+                                        // rename image with an image hash name to prevent duplicates
+                                        const nameHash = await imageHash.hash(filepath, 8, 'hex');
+                                        const newPath = filepath.replace(name, nameHash.hash + path.extname(filename));
+                                        const newRelativePath = relativePath.replace(name, nameHash.hash + path.extname(filename));
+                                        fs.renameSync(filepath, newPath)
+                                        const ret = {
+                                            fileUrl: `${req.headers.origin}/nft${newRelativePath}`,
+                                            headers: data.file.hapi.headers,
+                                            success: true
+                                        }
+                                        return resolve(ret);
+                                    });
+                                })
+                            }
+
+                            try {
+                                return await saveFile();
+                            } catch (e) {
+                                Boom.badRequest(e);
+                            }
+                        } else {
+                            return Boom.badRequest("No file supplied");
+                        }
+                    }
+                }
+            },
+            {
+                method: 'GET',
+                path: '/assets/{param*}',
+                options: {
+                    handler: function
+                        (req, h) {
+
+                        return h.file(__dirname + "/assets/" + req.params.param, {
+                            confine: false
+                        });
+                    }
+                    ,
                 }
             }
         ]

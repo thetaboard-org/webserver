@@ -41,7 +41,71 @@ const artist = function (server, options, next) {
                     }
                 }
             }
+        }, {
+            path: '/{id}',
+            method: 'PATCH',
+            options: {
+                auth: {
+                    strategy: 'token',
+                    scope: ['Admin', 'Creator']
+                },
+                handler: async function (req, h) {
+                    try {
+                        const current_user = await req.getModel('User').findOne({where: {'email': req.auth.credentials.email}});
+                        const artist = await req.getModel('Artist').findOne({where: {'id': req.params.id}});
+                        // check is authorized
+                        if (req.auth.credentials.scope !== 'Admin' &&
+                            (artist.dataValues.userId !== current_user.id ||
+                                artist.dataValues.userId !== req.payload.data.attributes.userId)) {
+                            return Boom.unauthorized();
+                        }
+
+                        // update attributes
+                        const attributes = req.payload.data.attributes;
+                        for (const attr in attributes) {
+                            artist[attr] = attributes[attr];
+                        }
+                        await artist.save()
+                        let response = {"data": {}};
+                        response.data = artist.toJSON();
+                        return response;
+                    } catch (e) {
+                        if (e && e.errors) {
+                            e = e.errors[0].message;
+                        }
+                        return Boom.badRequest(e);
+                    }
+                }
+            }
         },
+        {
+            path: '/',
+            method: 'POST',
+            options: {
+                auth: {
+                    strategy: 'token',
+                    scope: ['Admin', 'Creator']
+                },
+                handler: async function (req, h) {
+                    // Only admins can create a new artist
+                    try {
+                        const current_user = await req.getModel('User').findOne({where: {'email': req.auth.credentials.email}});
+                        // check is authorized
+                        if (req.auth.credentials.scope !== 'Admin') {
+                            return Boom.unauthorized();
+                        }
+                        const artist = req.getModel('Artist').build(req.payload.data.attributes);
+                        await artist.save()
+                        return {"data": artist.toJSON()};
+                    } catch (e) {
+                        if (e && e.errors) {
+                            e = e.errors[0].message;
+                        }
+                        return Boom.badRequest(e);
+                    }
+                }
+            }
+        }
     ]);
 };
 

@@ -1,5 +1,5 @@
 module.exports = function (sequelize, DataTypes) {
-    const Artist = sequelize.define('Artist', 
+    const Artist = sequelize.define('Artist',
         {
             bio: {
                 type: DataTypes.TEXT,
@@ -11,7 +11,7 @@ module.exports = function (sequelize, DataTypes) {
             },
             logoName: {
                 type: DataTypes.STRING,
-                allowNull: false
+                allowNull: true
             },
             image: {
                 type: DataTypes.STRING,
@@ -33,12 +33,21 @@ module.exports = function (sequelize, DataTypes) {
                 type: DataTypes.STRING,
                 allowNull: true
             },
+            userId: {
+                type: DataTypes.INTEGER,
+                allowNull: false
+            },
+            walletAddr: {
+                type: DataTypes.STRING,
+                allowNull: true
+            }
         },
     );
 
-    Artist.associate = function(models) {
-        Artist.hasMany(models.Drop, { foreignKey: 'artistId', foreignKeyConstraint: true });
-        Artist.hasMany(models.NFT, { foreignKey: 'artistId', foreignKeyConstraint: true });
+    Artist.associate = function (models) {
+        Artist.belongsTo(models.User, {foreignKeyConstraint: true});
+        Artist.hasMany(models.Drop, {foreignKey: 'artistId', foreignKeyConstraint: true});
+        Artist.hasMany(models.NFT, {foreignKey: 'artistId', foreignKeyConstraint: true});
     }
 
     Artist.prototype.toJSON = function () {
@@ -62,7 +71,7 @@ module.exports = function (sequelize, DataTypes) {
             }, {})
         }
     }
-    // Artist.sync({alter: true});
+    Artist.sync({alter: true});
 
     return Artist;
 };
