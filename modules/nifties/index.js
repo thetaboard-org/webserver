@@ -43,13 +43,18 @@ const NIFTIES = function (server, options, next) {
                     handler: async (req, h) => {
                         try {
                             const NFT_ID = req.params.NFT_ID;
-                            if (NFT_ID === "early_adopter") {
-                                return {
-                                    "image": "https://nft.thetaboard.io/nft/assets/thetaboard/early_adopter.png",
-                                    "name": "Thetaboard Early Adopter",
-                                    "description": "This badge was created for early adopters of the thetaboard community!",
-                                }
+                            let NFT;
+                            const [Artist, Drop, Assets, NftTokenId] = [req.getModel('Artist'), req.getModel('Drop'), req.getModel('NFTAsset'), req.getModel('NftTokenIds')]
+                            if (NFT_ID === "thetaboard-first") {
+                                NFT = await req.getModel('NFT').findOne({
+                                    where: {name: "Thetaboard Early Adopter"},
+                                    include: [Artist, Drop, Assets, NftTokenId]
+                                });
+                            } else {
+                                NFT = await req.getModel('NFT').findByPk(NFT_ID, {include: [Artist, Drop, Assets, NftTokenId]});
                             }
+
+                            return NFT.toERC721();
                         } catch (e) {
                             if (e && e.errors) {
                                 e = e.errors[0].message;
