@@ -379,10 +379,7 @@ const getWalletInfo = async function (wallet_adr, req) {
 
 const get_nft_info_721 = async (contract_adr, token_id) => {
     const provider = new thetajs.providers.HttpProvider(thetajs.networks.ChainIds.Mainnet);
-    // TODO: this is a hack until the contracts are correctly detected
-    if (contract_adr === '0xfbea9043f909b37a83ee9158b6698df8bec98553') {
-        contract_adr = "0x7500cbde64b1bf956351aa4ea2fa4ee1467a3428";
-    }
+
     const contract = new thetajs.Contract(contract_adr, nft_abi, provider);
     let token_uri = await contract.tokenURI(token_id);
     if (token_uri.includes('thetaboard') && process.env.NODE_ENV === 'development') {
