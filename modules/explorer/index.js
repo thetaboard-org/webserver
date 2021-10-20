@@ -304,7 +304,7 @@ const explorer = function (server, options, next) {
 
             let NFTs = []
             if (contracts_for_wallet) {
-                NFTs = await Promise.all(contracts_for_wallet.map(async (contract_idx) => {
+                NFTs = await Promise.all(contracts_for_wallet.reverse().map(async (contract_idx) => {
                     return get_nft_info_721(contract_idx['contract'], contract_idx['token']);
                 }))
             }
