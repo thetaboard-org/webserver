@@ -122,9 +122,17 @@ module.exports = function (sequelize, DataTypes) {
             TNT721.properties.assets = NFT.NFTAssets.map((x) => x.toJSON().attributes);
         }
         if (TOKEN_ID && NFT.NftTokenId) {
-            const array = JSON.parse(NFT.NftTokenId.arrayOfIds)
-            TNT721.token_id = array[TOKEN_ID]
+            const array = JSON.parse(NFT.NftTokenId.arrayOfIds);
+            try {
+                TNT721.token_id = array[TOKEN_ID];
+
+            } catch (e) {
+                TNT721.token_id = TOKEN_ID;
+            }
+        } else if (TOKEN_ID) {
+            TNT721.token_id = TOKEN_ID;
         }
+
         return TNT721
     }
     return NFT;
