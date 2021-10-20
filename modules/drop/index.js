@@ -12,10 +12,9 @@ const drop = function (server, options, next) {
                         let response = {"data": []};
                         drops.forEach(rawDrop => {
                             let drop = rawDrop.toJSON();
-                            drop.relationships = {};
-                            drop.relationships = { 
+                            drop.relationships = {
                                 artist: {
-                                    data: { "type": "artist", "id": rawDrop.artistId }
+                                    data: {"type": "artist", "id": rawDrop.artistId}
                                 }
                             }
                             response.data.push(drop);
@@ -41,21 +40,21 @@ const drop = function (server, options, next) {
 
                         if (rawDrop) {
                             let drop = rawDrop.toJSON();
-                            drop.relationships = { 
+                            drop.relationships = {
                                 artist: {
-                                    data: { "type": "artist", "id": rawDrop.artistId }
+                                    data: {"type": "artist", "id": rawDrop.artistId}
                                 }
                             }
                             const rawNFTs = await req.getModel('NFT').findAll({where: {'dropId': drop.id}});
                             if (rawNFTs.length) {
-                                drop.relationships.nfts = { 
-                                    data: rawNFTs.map((nft) => ({ "type": "nft", "id": nft.id }))
+                                drop.relationships.nfts = {
+                                    data: rawNFTs.map((nft) => ({"type": "nft", "id": nft.id}))
                                 };
                             }
                             response.data = drop;
                         }
-                        
-    
+
+
                         return response;
                     } catch (e) {
                         if (e && e.errors) {
@@ -65,7 +64,78 @@ const drop = function (server, options, next) {
                     }
                 }
             }
+        }, {
+            path: '/{id}',
+            method: 'PATCH',
+            options: {
+                auth: {
+                    strategy: 'token',
+                    scope: ['Admin', 'Creator']
+                },
+                handler: async function (req, h) {
+                    try {
+                        const current_user = await req.getModel('User').findOne({where: {'email': req.auth.credentials.email}});
+                        const drop = await req.getModel('Drop').findOne({
+                            where: {'id': req.params.id},
+                            include: "Artist"
+                        });
+                        // check if authorized
+                        if (!(req.auth.credentials.scope === 'Admin' ||
+                            (drop.dataValues.Artist.userId === current_user.id &&
+                                drop.dataValues.Artist.id === Number(req.payload.data.relationships.artist.data.id)))) {
+                            return Boom.unauthorized();
+                        }
+
+                        // update attributes
+                        const attributes = req.payload.data.attributes;
+                        for (const attr in attributes) {
+                            drop[attr] = attributes[attr];
+                        }
+                        drop.artistId = req.payload.data.relationships.artist.data.id;
+                        await drop.save()
+                        const dropJSON = drop.toJSON();
+                        dropJSON.relationships = {
+                            artist: {
+                                data: {"type": "artist", "id": req.payload.data.relationships.artist.data.id}
+                            }
+                        }
+                        return {"data": dropJSON};
+                    } catch (e) {
+                        if (e && e.errors) {
+                            e = e.errors[0].message;
+                        }
+                        return Boom.badRequest(e);
+                    }
+                }
+            }
         },
+        {
+            path: '/',
+            method: 'POST',
+            options: {
+                auth: {
+                    strategy: 'token',
+                    scope: ['Admin', 'Creator']
+                },
+                handler: async function (req, h) {
+                    try {
+                        // check is authorized
+                        if (req.auth.credentials.scope !== 'Admin') {
+                            // check if drop is created for the current artist
+                            return Boom.unauthorized();
+                        }
+                        const drop = req.getModel('Drop').build(req.payload.data.attributes);
+                        await drop.save()
+                        return {"data": drop.toJSON()};
+                    } catch (e) {
+                        if (e && e.errors) {
+                            e = e.errors[0].message;
+                        }
+                        return Boom.badRequest(e);
+                    }
+                }
+            }
+        }
     ]);
 };
 
