@@ -81,8 +81,8 @@ const drop = function (server, options, next) {
                         });
                         // check if authorized
                         if (!(req.auth.credentials.scope === 'Admin' ||
-                            (drop.dataValues.Artist.userId === current_user.id &&
-                                drop.dataValues.Artist.id === Number(req.payload.data.relationships.artist.data.id)))) {
+                            (drop.Artist.userId === current_user.id &&
+                                drop.Artist.id === Number(req.payload.data.relationships.artist.data.id)))) {
                             return Boom.unauthorized();
                         }
 
@@ -119,14 +119,51 @@ const drop = function (server, options, next) {
                 },
                 handler: async function (req, h) {
                     try {
-                        // check is authorized
-                        if (req.auth.credentials.scope !== 'Admin') {
-                            // check if drop is created for the current artist
+                        const current_user = await req.getModel('User').findOne({where: {'email': req.auth.credentials.email}});
+                        const artist = await req.getModel('Artist').findOne({
+                            where: {'id': req.payload.data.relationships.artist.data.id},
+                        });
+                        // check if authorized
+                        if (!(req.auth.credentials.scope === 'Admin' ||
+                            artist.userId === current_user.id)) {
                             return Boom.unauthorized();
                         }
+
                         const drop = req.getModel('Drop').build(req.payload.data.attributes);
+                        drop.artistId = req.payload.data.relationships.artist.data.id;
                         await drop.save()
                         return {"data": drop.toJSON()};
+                    } catch (e) {
+                        if (e && e.errors) {
+                            e = e.errors[0].message;
+                        }
+                        return Boom.badRequest(e);
+                    }
+                }
+            }
+        },
+        {
+            path: '/{id}',
+            method: 'DELETE',
+            options: {
+                auth: {
+                    strategy: 'token',
+                    scope: ['Admin', 'Creator']
+                },
+                handler: async function (req, h) {
+                    try {
+                        const current_user = await req.getModel('User').findOne({where: {'email': req.auth.credentials.email}});
+                        const drop = await req.getModel('Drop').findOne({
+                            where: {'id': req.params.id},
+                            include: "Artist"
+                        });
+                        // check if authorized
+                        if (!(req.auth.credentials.scope === 'Admin' ||
+                            (drop.Artist.userId === current_user.id &&
+                                drop.Artist.id === Number(req.payload.data.relationships.artist.data.id)))) {
+                            return Boom.unauthorized();
+                        }
+                        return await drop.destroy();
                     } catch (e) {
                         if (e && e.errors) {
                             e = e.errors[0].message;

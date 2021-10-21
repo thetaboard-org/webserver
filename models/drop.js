@@ -34,7 +34,8 @@ module.exports = function (sequelize, DataTypes) {
             indexes: [{
                 fields: ['artistId'],
                 unique: false
-            }]
+            }],
+            paranoid: true
         });
 
     Drop.associate = function (models) {
@@ -67,7 +68,7 @@ module.exports = function (sequelize, DataTypes) {
             }, {})
         }
     }
-    // Drop.sync({alter: true});
+    Drop.sync({alter: true});
 
     return Drop;
 };

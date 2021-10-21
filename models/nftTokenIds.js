@@ -14,7 +14,8 @@ module.exports = function (sequelize, DataTypes) {
             indexes: [{
                 fields: ['nftId'],
                 unique: false
-            }]
+            }],
+            paranoid: true
         });
 
     nftTokenIds.associate = function (models) {
@@ -24,6 +25,8 @@ module.exports = function (sequelize, DataTypes) {
             }
         });
     }
+    nftTokenIds.sync({alter: true});
+
 
     return nftTokenIds;
 }
