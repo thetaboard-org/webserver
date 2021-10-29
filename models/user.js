@@ -21,7 +21,7 @@ module.exports = function (sequelize, DataTypes) {
             // here we defines the user role like admin, customer, etc..
             scope: {
                 type: DataTypes.ENUM,
-                values: ['Admin', 'User'],
+                values: ['Admin', 'User', 'Creator'],
                 defaultValue: 'User',
                 allowNull: false
             },
@@ -53,6 +53,8 @@ module.exports = function (sequelize, DataTypes) {
         delete values.password;
         return values;
     }
+    User.sync({alter: true});
+
     return User;
 };
 

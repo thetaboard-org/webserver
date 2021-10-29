@@ -9,15 +9,9 @@ const nft = function (server, options, next) {
                 handler: async function (req, h) {
                     try {
                         let nfts;
-                        if (req.query.artistId) {
+                        if (req.query) {
                             nfts = await req.getModel('NFT').findAll({
-                                where:
-                                    {'artistId': req.query.artistId}, include: 'NFTAsset'
-                            });
-                        } else if (req.query.dropId) {
-                            nfts = await req.getModel('NFT').findAll({
-                                where: {'dropId': req.query.dropId},
-                                include: 'NFTAsset'
+                                where: req.query, include: 'NFTAsset'
                             });
                         } else {
                             nfts = await req.getModel('NFT').findAll({include: 'NFTAsset'});

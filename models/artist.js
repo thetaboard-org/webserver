@@ -42,6 +42,9 @@ module.exports = function (sequelize, DataTypes) {
                 allowNull: true
             }
         },
+        {
+            paranoid: true
+        }
     );
 
     Artist.associate = function (models) {

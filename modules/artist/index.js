@@ -8,10 +8,15 @@ const artist = function (server, options, next) {
             options: {
                 handler: async function (req, h) {
                     try {
-                        const artists = await req.getModel('Artist').findAll();
-                        let response = {"data": []};
-                        artists.forEach(artist => {
-                            response.data.push(artist.toJSON());
+                        let artists;
+                        if (req.query) {
+                            artists = await req.getModel('Artist').findAll(req.query);
+                        } else {
+                            artists = await req.getModel('Artist').findAll();
+                        }
+                        const response = {"data": []};
+                        response.data = artists.map(artist => {
+                            return artist.toJSON();
                         });
                         return response;
                     } catch (e) {
@@ -97,6 +102,37 @@ const artist = function (server, options, next) {
                         const artist = req.getModel('Artist').build(req.payload.data.attributes);
                         await artist.save()
                         return {"data": artist.toJSON()};
+                    } catch (e) {
+                        if (e && e.errors) {
+                            e = e.errors[0].message;
+                        }
+                        return Boom.badRequest(e);
+                    }
+                }
+            }
+        },
+        {
+            path: '/{id}',
+            method: 'DELETE',
+            options: {
+                auth: {
+                    strategy: 'token',
+                    scope: ['Admin', 'Creator']
+                },
+                handler: async function (req, h) {
+                    try {
+                        const current_user = await req.getModel('User').findOne(
+                            {where: {'email': req.auth.credentials.email}});
+                        const artist = await req.getModel('Artist').findOne(
+                            {where: {'id': req.params.id}});
+                        // check is authorized
+                        if (req.auth.credentials.scope !== 'Admin' &&
+                            (artist.dataValues.userId !== current_user.id ||
+                                artist.dataValues.userId !== req.payload.data.attributes.userId)) {
+                            return Boom.unauthorized();
+                        }
+
+                        return await artist.destroy();
                     } catch (e) {
                         if (e && e.errors) {
                             e = e.errors[0].message;
