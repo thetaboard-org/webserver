@@ -28,7 +28,7 @@ module.exports = function (sequelize, DataTypes) {
             },
             nftContractId: {
                 type: DataTypes.STRING,
-                allowNull: false
+                allowNull: true
             },
             nftSellController: {
                 type: DataTypes.STRING,
@@ -72,7 +72,7 @@ module.exports = function (sequelize, DataTypes) {
                 name: 'dropId'
             }
         });
-        NFT.hasMany(models.NFTAsset, {foreignKey: 'nftId', foreignKeyConstraint: true});
+        NFT.hasMany(models.NFTAsset, {foreignKey: 'nftId', foreignKeyConstraint: true, as: "NFTAsset"});
         NFT.hasOne(models.NftTokenIds, {foreignKey: 'nftId', foreignKeyConstraint: true});
     }
 

@@ -3,24 +3,31 @@ const fs = require("fs");
 const crypto = require("crypto");
 const path = require('path');
 const imageHash = require('node-image-hash');
-
+const ffmpeg = require('@ffmpeg-installer/ffmpeg');
+const ffprobe = require('@ffprobe-installer/ffprobe');
+const videoHash = require('video-hash')({
+    ffmpegPath: ffmpeg.path,
+    ffprobePath: ffprobe.path,
+    strength: 0.1
+});
 
 const NIFTIES = function (server, options, next) {
     server.route([
-            {
-                method: 'get',
-                path: '/{NFT_ID}/{TOKEN_ID}',
-                options: {
-                    handler: async (req, h) => {
-                        try {
-                            const NFT_ID = req.params.NFT_ID;
-                            const TOKEN_ID = req.params.TOKEN_ID;
-                            let NFT;
-                            const [Artist, Drop, Assets, NftTokenId] = [req.getModel('Artist'), req.getModel('Drop'), req.getModel('NFTAsset'), req.getModel('NftTokenIds')]
-                            if (NFT_ID === "thetaboard-first") {
-                                NFT = await req.getModel('NFT').findOne({
-                                    where: {name: "Thetaboard Early Adopter"},
-                                    include: [Artist, Drop, Assets, NftTokenId]
+        {
+            method: 'get',
+            path: '/{NFT_ID}/{TOKEN_ID}',
+            options: {
+                cors: true,
+                handler: async (req, h) => {
+                    try {
+                        const NFT_ID = req.params.NFT_ID;
+                        const TOKEN_ID = req.params.TOKEN_ID;
+                        let NFT;
+                        const [Artist, Drop, Assets, NftTokenId] = [req.getModel('Artist'), req.getModel('Drop'), req.getModel('NFTAsset'), req.getModel('NftTokenIds')]
+                        if (NFT_ID === "thetaboard-first") {
+                            NFT = await req.getModel('NFT').findOne({
+                                where: {name: "Thetaboard Early Adopter"},
+                                include: [Artist, Drop, Assets, NftTokenId]
                                 });
                             } else {
                                 NFT = await req.getModel('NFT').findByPk(NFT_ID, {include: [Artist, Drop, Assets, NftTokenId]});
@@ -40,6 +47,7 @@ const NIFTIES = function (server, options, next) {
                 method: 'get',
                 path: '/{NFT_ID}',
                 options: {
+                    cors: true,
                     handler: async (req, h) => {
                         try {
                             const NFT_ID = req.params.NFT_ID;
@@ -72,7 +80,8 @@ const NIFTIES = function (server, options, next) {
                         output: 'stream',
                         parse: true,
                         allow: 'multipart/form-data',
-                        multipart: true
+                        multipart: true,
+                        maxBytes: 1048576 * 30 //30 mb
                     },
                     handler: async (req, res) => {
                         const data = req.payload;
@@ -99,10 +108,18 @@ const NIFTIES = function (server, options, next) {
                                     data.file.pipe(file);
 
                                     data.file.on('end', async (err) => {
-                                        // rename image with an image hash name to prevent duplicates
-                                        const nameHash = await imageHash.hash(filepath, 8, 'hex');
-                                        const newPath = filepath.replace(name, nameHash.hash + path.extname(filename));
-                                        const newRelativePath = relativePath.replace(name, nameHash.hash + path.extname(filename));
+                                        // rename image/video with an image hash name to prevent duplicates
+                                        let nameHash;
+                                        if (data.file.hapi.headers["content-type"].includes('video')) {
+                                            console.log('before')
+                                            nameHash = await videoHash.video(filepath).hash();
+                                            console.log('after')
+                                        } else {
+                                            const nameHashTemp = await imageHash.hash(filepath, 8, 'hex');
+                                            nameHash = nameHashTemp.hash;
+                                        }
+                                        const newPath = filepath.replace(name, nameHash + path.extname(filename));
+                                        const newRelativePath = relativePath.replace(name, nameHash + path.extname(filename));
                                         fs.renameSync(filepath, newPath)
                                         const ret = {
                                             fileUrl: `${req.headers.origin}/nft${newRelativePath}`,
@@ -130,7 +147,7 @@ const NIFTIES = function (server, options, next) {
                 path: '/assets/{param*}',
                 options: {
                     handler: function
-                        (req, h) {
+                    (req, h) {
 
                         return h.file(__dirname + "/assets/" + req.params.param, {
                             confine: false

@@ -9,6 +9,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@ffmpeg-installer/ffmpeg": "^1.1.0",
+    "@ffprobe-installer/ffprobe": "^1.2.0",
     "@hapi/bell": "^12.2.0",
     "@hapi/boom": "^9.1.2",
     "@hapi/catbox": "^11.1.1",
@@ -37,6 +39,7 @@
     "stream-stream": "^1.2.6",
     "tar": ">=6.1.2",
     "uuid": "^8.3.2",
+    "video-hash": "^1.0.0",
     "web3": "^1.5.2"
   },
   "devDependencies": {
