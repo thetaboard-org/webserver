@@ -92,7 +92,12 @@ module.exports = function (sequelize, DataTypes) {
                 if (key === 'id') {
                     return acc
                 }
-                acc[toKebabCase(key)] = val;
+                //NFTAsset breaks the fuciton because of the uppercase
+                if (key === 'NFTAsset') {
+                    acc['nft-assets'] = val;
+                } else {
+                    acc[toKebabCase(key)] = val;
+                }
                 return acc;
             }, {})
         }

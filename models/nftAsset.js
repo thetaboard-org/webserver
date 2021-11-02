@@ -50,7 +50,7 @@ module.exports = function (sequelize, DataTypes) {
         const values = Object.assign({}, this.get());
         return {
             id: values.id,
-            type: 'nftAsset',
+            type: 'nft-asset',
             attributes: Object.entries(values).reduce((acc, value) => {
                 const [key, val] = value;
                 if (key === 'id') {

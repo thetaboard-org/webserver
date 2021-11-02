@@ -26,8 +26,14 @@ const nft = function (server, options, next) {
                                 drop: {
                                     data: {"type": "drop", "id": rawNFT.dropId}
                                 },
-                                NFTAsset: rawNFT.NFTAsset.map(x => x.toJSON())
+                                'nft-assets': rawNFT.NFTAsset.map(x => {
+                                    return {
+                                        type: "nft-asset",
+                                        id: x.id
+                                    }
+                                })
                             };
+                            nft.included = rawNFT.NFTAsset.map(x => x.toJSON())
                             return nft;
                         });
                         return response;
