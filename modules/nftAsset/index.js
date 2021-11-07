@@ -25,18 +25,16 @@ const nftAsset = function (server, options, next) {
             }
         },
         {
-            path: '/{id}',
+            path: '/',
             method: 'GET',
             options: {
                 handler: async function (req, h) {
                     try {
-                        const rawNftAsset = await req.getModel('NFTAsset').findOne({where: {'id': req.params.id}});
-                        let response = {"data": {}};
-                        if (rawNftAsset) {
-                            let nftAsset = rawNftAsset.toJSON();
-                            response.data = nftAsset;
+                        if (!req.query.nftId) {
+                            return Boom.badRequest("Must pass nftId as query params");
                         }
-                        return response;
+                        const rawNftAssets = await req.getModel('NFTAsset').findAll({where: {'nftId': req.query.nftId}});
+                        return {"data": rawNftAssets.map((x) => x.toJSON())};
                     } catch (e) {
                         if (e && e.errors) {
                             e = e.errors[0].message;
@@ -57,24 +55,23 @@ const nftAsset = function (server, options, next) {
                 handler: async function (req, h) {
                     try {
                         const current_user = await req.getModel('User').findOne({where: {'email': req.auth.credentials.email}});
-                        debugger
-                        const NFT = await req.getModel('NFT').findByPk(req.params.id, {
-                            include: "Artist"
+                        const NFTasset = await req.getModel('NFTAsset').findByPk(req.params.id, {
+                            include: ["NFT"]
                         });
+                        const artist = await NFTasset.NFT.getArtist();
                         // check if authorized
                         if (!(req.auth.credentials.scope === 'Admin' ||
-                            (NFT.Artist.userId === current_user.id &&
-                                NFT.Artist.id === req.payload.data.artistId))) {
+                            (artist.userId === current_user.id))) {
                             return Boom.unauthorized();
                         }
 
                         // update attributes
                         const attributes = req.payload.data.attributes;
                         for (const attr in attributes) {
-                            NFT[attr] = attributes[attr];
+                            NFTasset[attr] = attributes[attr];
                         }
-                        await NFT.save()
-                        return {"data": NFT.toJSON()};
+                        await NFTasset.save()
+                        return {"data": NFTasset.toJSON()};
                     } catch (e) {
                         if (e && e.errors) {
                             e = e.errors[0].message;

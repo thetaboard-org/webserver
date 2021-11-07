@@ -16,7 +16,7 @@ const nft = function (server, options, next) {
                         } else {
                             nfts = await req.getModel('NFT').findAll({include: 'NFTAsset'});
                         }
-                        let response = {"data": []};
+                        let response = {"data": [], included: []};
                         response.data = nfts.map(rawNFT => {
                             const nft = rawNFT.toJSON();
                             nft.relationships = {
@@ -26,14 +26,20 @@ const nft = function (server, options, next) {
                                 drop: {
                                     data: {"type": "drop", "id": rawNFT.dropId}
                                 },
-                                'nft-assets': rawNFT.NFTAsset.map(x => {
-                                    return {
-                                        type: "nft-asset",
-                                        id: x.id
-                                    }
-                                })
+                                'nft-assets': {
+                                    data: rawNFT.NFTAsset.map(x => {
+                                        return {
+                                            type: "nft-asset",
+                                            id: x.id
+                                        }
+                                    })
+                                }
                             };
-                            nft.included = rawNFT.NFTAsset.map(x => x.toJSON())
+                            response.included.push(...rawNFT.NFTAsset.map(x => {
+                                const model = x.toJSON();
+                                model.relationships = {id: rawNFT.id, type: 'nft'};
+                                return model;
+                            }))
                             return nft;
                         });
                         return response;

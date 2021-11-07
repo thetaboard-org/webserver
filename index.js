@@ -29,7 +29,7 @@ const manifest = {
                         'log': '{ message::message, timestamp::time[iso], level::level, environment::environment }',
                         'request': '{ message::message, timestamp::time[iso], level::level, environment::environment }',
                         'request-error': '{ error::error, timestamp::time[iso], level::level, environment::environment }',
-                        'response': ':time[iso] :method :remoteAddress :url :status :payload (:responseTime ms)',
+                        'response': ':time[iso] :method :remoteAddress :url :status (:responseTime ms)',
                         'uncaught': '{ error::error, timestamp::time[iso], level::level, environment::environment, source::error[source] }'
                     },
                     indent: 0

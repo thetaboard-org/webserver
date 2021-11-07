@@ -232,7 +232,6 @@ const user = function (server, options, next) {
                         }
                         return response;
                     } catch (e) {
-                        debugger
                         if (e && e.errors) {
                             e = e.errors[0].message;
                         }

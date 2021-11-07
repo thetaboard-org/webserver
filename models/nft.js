@@ -84,6 +84,7 @@ module.exports = function (sequelize, DataTypes) {
                 .toLowerCase()
         };
         const values = Object.assign({}, this.get());
+        const blacklist = ['NFTAsset'];
         return {
             id: values.id,
             type: 'nft',
@@ -92,10 +93,7 @@ module.exports = function (sequelize, DataTypes) {
                 if (key === 'id') {
                     return acc
                 }
-                //NFTAsset breaks the fuciton because of the uppercase
-                if (key === 'NFTAsset') {
-                    acc['nft-assets'] = val;
-                } else {
+                if (!blacklist.includes(key)) {
                     acc[toKebabCase(key)] = val;
                 }
                 return acc;
