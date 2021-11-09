@@ -163,7 +163,8 @@ const drop = function (server, options, next) {
                                 drop.Artist.id === Number(req.payload.data.relationships.artist.data.id)))) {
                             return Boom.unauthorized();
                         }
-                        return await drop.destroy();
+                        await drop.destroy();
+                        return h.response({}).code(204)
                     } catch (e) {
                         if (e && e.errors) {
                             e = e.errors[0].message;

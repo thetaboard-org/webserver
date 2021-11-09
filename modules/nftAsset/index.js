@@ -125,16 +125,17 @@ const nftAsset = function (server, options, next) {
                     try {
                         const current_user = await req.getModel('User').findOne(
                             {where: {'email': req.auth.credentials.email}});
-                        const NFT = await req.getModel('NFT').findByPk(req.params.id, {
-                            include: "Artist"
+                        const NFTasset = await req.getModel('NFTAsset').findByPk(req.params.id, {
+                            include: "NFT"
                         });
+                        const artist = await NFTasset.NFT.getArtist();
                         // check if authorized
                         if (!(req.auth.credentials.scope === 'Admin' ||
-                            (NFT.Artist.userId === current_user.id &&
-                                NFT.Artist.id === req.payload.data.artistId))) {
+                            (artist.userId === current_user.id))) {
                             return Boom.unauthorized();
                         }
-                        return await NFT.destroy();
+                        await NFTasset.destroy();
+                        return h.response({}).code(204)
                     } catch (e) {
                         if (e && e.errors) {
                             e = e.errors[0].message;

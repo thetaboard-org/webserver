@@ -131,8 +131,8 @@ const artist = function (server, options, next) {
                                 artist.dataValues.userId !== req.payload.data.attributes.userId)) {
                             return Boom.unauthorized();
                         }
-
-                        return await artist.destroy();
+                        await artist.destroy();
+                        return h.response({}).code(204);
                     } catch (e) {
                         if (e && e.errors) {
                             e = e.errors[0].message;

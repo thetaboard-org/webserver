@@ -54,9 +54,12 @@ module.exports = function (sequelize, DataTypes) {
             attributes: Object.entries(values).reduce((acc, value) => {
                 const [key, val] = value;
                 if (key === 'id') {
-                    return acc
+                    return acc;
+                } else if(key === 'NFT'){
+                    acc['nft'] = val;
+                } else{
+                    acc[toKebabCase(key)] = val;
                 }
-                acc[toKebabCase(key)] = val;
                 return acc;
             }, {})
         }

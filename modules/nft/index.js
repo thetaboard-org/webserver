@@ -180,7 +180,8 @@ const nft = function (server, options, next) {
                                 NFT.Artist.id === req.payload.data.artistId))) {
                             return Boom.unauthorized();
                         }
-                        return await NFT.destroy();
+                        await NFT.destroy()
+                        return h.response({}).code(204);
                     } catch (e) {
                         if (e && e.errors) {
                             e = e.errors[0].message;
