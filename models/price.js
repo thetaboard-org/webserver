@@ -89,6 +89,15 @@ module.exports = function (sequelize, DataTypes) {
                 const tfuel_price = await got(
                     `https://api.coingecko.com/api/v3/coins/theta-fuel/market_chart/range?vs_currency=${currency}&from=${start_ts}&to=${end_ts}`
                 ).json();
+
+                // if either theta price or tfuel price is not updated for latest day,
+                // don't save the latest price
+                const diff = theta_price.prices.length - tfuel_price.prices.length;
+                if (diff > 0) {
+                    theta_price.prices.splice(-1, diff);
+                } else if (diff < 0) {
+                    tfuel_price.prices.splice(-1, diff);
+                }
                 const all_models = await Promise.all(theta_price.prices.map(async (x, idx) => {
                     return Price.upsert({
                         date: Moment(x[0]).utc().format('YYYY-MM-DD'),
