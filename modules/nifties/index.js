@@ -13,24 +13,26 @@ const videoHash = require('video-hash')({
 
 const NIFTIES = function (server, options, next) {
     server.route([
-        {
-            method: 'get',
-            path: '/{NFT_ID}/{TOKEN_ID}',
-            options: {
-                cors: true,
-                handler: async (req, h) => {
-                    try {
-                        const NFT_ID = req.params.NFT_ID;
-                        const TOKEN_ID = req.params.TOKEN_ID;
-                        let NFT;
-                        const [Artist, Drop, Assets, NftTokenId] = [req.getModel('Artist'), req.getModel('Drop'), req.getModel('NFTAsset'), req.getModel('NftTokenIds')]
-                        if (NFT_ID === "thetaboard-first") {
-                            NFT = await req.getModel('NFT').findOne({
-                                where: {name: "Thetaboard Early Adopter"},
-                                include: [Artist, Drop, Assets, NftTokenId]
+            {
+                method: 'get',
+                path: '/{NFT_ID}/{TOKEN_ID}',
+                options: {
+                    cors: true,
+                    handler: async (req, h) => {
+                        try {
+                            const NFT_ID = req.params.NFT_ID;
+                            const TOKEN_ID = req.params.TOKEN_ID;
+                            let NFT;
+                            if (NFT_ID === "thetaboard-first") {
+                                NFT = await req.getModel('NFT').findOne({
+                                    where: {name: "Thetaboard Early Adopter"},
+                                    include: ['Artist', 'Drop', 'NFTAsset', 'NftTokenId']
                                 });
                             } else {
-                                NFT = await req.getModel('NFT').findByPk(NFT_ID, {include: [Artist, Drop, Assets, NftTokenId]});
+                                NFT = await req.getModel('NFT').findByPk(NFT_ID,
+                                    {
+                                        include: ['Artist', 'Drop', 'NFTAsset', 'NftTokenId']
+                                    });
                             }
 
                             return NFT.toERC721(TOKEN_ID);
@@ -147,7 +149,7 @@ const NIFTIES = function (server, options, next) {
                 path: '/assets/{param*}',
                 options: {
                     handler: function
-                    (req, h) {
+                        (req, h) {
 
                         return h.file(__dirname + "/assets/" + req.params.param, {
                             confine: false
