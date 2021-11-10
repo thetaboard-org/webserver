@@ -9,17 +9,21 @@ const drop = function (server, options, next) {
                 handler: async function (req, h) {
                     try {
                         const drops = await req.getModel('Drop').findAll();
-                        let response = {"data": []};
-                        drops.forEach(rawDrop => {
-                            let drop = rawDrop.toJSON();
-                            drop.relationships = {
-                                artist: {
-                                    data: {"type": "artist", "id": rawDrop.artistId}
+                        return {
+                            "data": await Promise.all(drops.map(async rawDrop => {
+                                const drop = rawDrop.toJSON();
+                                const rawNFTs = await req.getModel('NFT').findAll({where: {'dropId': rawDrop.id}});
+                                drop.relationships = {
+                                    artist: {
+                                        data: {"type": "artist", "id": rawDrop.artistId}
+                                    },
+                                    nfts: {
+                                        data: rawNFTs.map((nft) => ({"type": "nft", "id": nft.id}))
+                                    }
                                 }
-                            }
-                            response.data.push(drop);
-                        });
-                        return response;
+                                return drop;
+                            }))
+                        };
                     } catch (e) {
                         if (e && e.errors) {
                             e = e.errors[0].message;
