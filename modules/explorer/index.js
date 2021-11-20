@@ -332,7 +332,6 @@ const explorer = function (server, options, next) {
 }
 
 
-
 const getWalletInfo = async function (wallet_adr, req) {
     let response = [];
     // get theta holding
@@ -417,8 +416,16 @@ const get_nft_info_721 = async (contract_adr, token_id) => {
         TNT721['name'] = `${await contract.name()}`;
     } else {
         try {
-            const nft_metadata_api = await fetch(token_uri)
+            if (parsed.protocol === 'ipfs:') {
+                token_uri = `https://ipfs.io/${token_uri.replace(':/','')}`
+            }
+            const nft_metadata_api = await fetch(token_uri);
             const nft_metadata = await nft_metadata_api.json();
+
+            const image_parsed = new URL(nft_metadata['image']);
+            if (image_parsed.protocol === 'ipfs:') {
+                nft_metadata['image'] = `https://ipfs.io/${nft_metadata['image'].replace(':/','')}`
+            }
             TNT721['image'] = nft_metadata['image'];
             if (nft_metadata.token_id && !nft_metadata['name'].includes("#")) {
                 TNT721['name'] = `${nft_metadata['name']} #${nft_metadata.token_id}`;
