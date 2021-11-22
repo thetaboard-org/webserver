@@ -8,7 +8,12 @@ const drop = function (server, options, next) {
             options: {
                 handler: async function (req, h) {
                     try {
-                        const drops = await req.getModel('Drop').findAll();
+                        let drops;
+                        if (req.query) {
+                            drops = await req.getModel('Drop').findAll({where: req.query});
+                        } else {
+                            drops = await req.getModel('Drop').findAll();
+                        }
                         return {
                             "data": await Promise.all(drops.map(async rawDrop => {
                                 const drop = rawDrop.toJSON();

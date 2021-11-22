@@ -106,7 +106,7 @@ const nft = function (server, options, next) {
                         // check if authorized
                         if (!(req.auth.credentials.scope === 'Admin' ||
                             (NFT.Artist.userId === current_user.id &&
-                                NFT.Artist.id === req.payload.data.artistId))) {
+                                NFT.Artist.id === req.payload.data.attributes.artistId))) {
                             return Boom.unauthorized();
                         }
 

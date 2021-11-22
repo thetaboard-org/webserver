@@ -10,7 +10,7 @@ const artist = function (server, options, next) {
                     try {
                         let artists;
                         if (req.query) {
-                            artists = await req.getModel('Artist').findAll(req.query);
+                            artists = await req.getModel('Artist').findAll({where: req.query});
                         } else {
                             artists = await req.getModel('Artist').findAll();
                         }
@@ -92,11 +92,13 @@ const artist = function (server, options, next) {
                     scope: ['Admin', 'Creator']
                 },
                 handler: async function (req, h) {
-                    // Only admins can create a new artist
                     try {
-                        const current_user = await req.getModel('User').findOne({where: {'email': req.auth.credentials.email}});
+                        const current_user = await req.getModel('User').findOne(
+                            {where: {'email': req.auth.credentials.email}});
                         // check is authorized
-                        if (req.auth.credentials.scope !== 'Admin') {
+                        if (!(req.auth.credentials.scope === 'Admin' ||
+                            (req.auth.credentials.scope === 'Creator'
+                                && req.payload.data.attributes.userId === current_user.id))) {
                             return Boom.unauthorized();
                         }
                         const artist = req.getModel('Artist').build(req.payload.data.attributes);
