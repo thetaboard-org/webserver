@@ -28,6 +28,11 @@ module.exports = function (sequelize, DataTypes) {
             image: {
                 type: DataTypes.STRING,
                 allowNull: true
+            },
+            isPublic: {
+                type: DataTypes.BOOLEAN,
+                allowNull: false,
+                default: false
             }
         },
         {
@@ -44,7 +49,7 @@ module.exports = function (sequelize, DataTypes) {
                 name: 'artistId'
             }
         });
-        Drop.hasMany(models.NFT, { foreignKey: 'dropId', foreignKeyConstraint: true });
+        Drop.hasMany(models.NFT, {foreignKey: 'dropId', foreignKeyConstraint: true});
     }
 
     Drop.prototype.toJSON = function () {

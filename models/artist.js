@@ -74,7 +74,7 @@ module.exports = function (sequelize, DataTypes) {
             }, {})
         }
     }
-    Artist.sync({alter: true});
+    // Artist.sync({alter: true});
 
     return Artist;
 };
