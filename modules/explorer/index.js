@@ -292,7 +292,7 @@ const explorer = function (server, options, next) {
             const contracts_for_wallet = [];
             let index = 0;
             while (true) {
-                const get_contracts_for_wallet = await got(`https://www.thetascan.io/api/nft/?address=${wallet_adr.toLowerCase()}&index=${index}`);
+                const get_contracts_for_wallet = await got(`http://www.thetascan.io/api/nft/?address=${wallet_adr.toLowerCase()}&index=${index}`);
                 const contracts_adr = JSON.parse(get_contracts_for_wallet.body);
                 if (!!contracts_adr) {
                     contracts_for_wallet.push(...contracts_adr);
