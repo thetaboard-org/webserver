@@ -2,7 +2,7 @@ const Boom = require("@hapi/boom");
 const fs = require("fs");
 const crypto = require("crypto");
 const path = require('path');
-const imageHash = require('node-image-hash');
+const Jimp = require('jimp');
 const ffmpeg = require('@ffmpeg-installer/ffmpeg');
 const ffprobe = require('@ffprobe-installer/ffprobe');
 const videoHash = require('video-hash')({
@@ -95,7 +95,7 @@ const NIFTIES = function (server, options, next) {
                                 const split = filename.split('/');
                                 uploadPath = split.slice(0, -1).join('/') + '/';
                             }
-                            name = crypto.randomBytes(20).toString('hex')
+                            name = crypto.randomBytes(20).toString('hex') + path.extname(filename);
                             const relativePath = `/assets/${uploadPath}${name}`
                             const filepath = `${__dirname}${relativePath}`;
 
@@ -113,12 +113,10 @@ const NIFTIES = function (server, options, next) {
                                         // rename image/video with an image hash name to prevent duplicates
                                         let nameHash;
                                         if (data.file.hapi.headers["content-type"].includes('video')) {
-                                            console.log('before')
                                             nameHash = await videoHash.video(filepath).hash();
-                                            console.log('after')
                                         } else {
-                                            const nameHashTemp = await imageHash.hash(filepath, 8, 'hex');
-                                            nameHash = nameHashTemp.hash;
+                                          const img = await Jimp.read(filepath);
+                                          nameHash = img.hash();
                                         }
                                         const newPath = filepath.replace(name, nameHash + path.extname(filename));
                                         const newRelativePath = relativePath.replace(name, nameHash + path.extname(filename));
