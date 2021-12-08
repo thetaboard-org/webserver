@@ -313,16 +313,16 @@ const explorer = function (server, options, next) {
     });
 
     server.route({
-        path: '/wallet-info/{contract_adr}/{token_id}',
+        path: '/wallet-info/{contract_addr}/{token_id}',
         method: 'GET',
         handler: async (req, h) => {
-            const contract_adr = req.params.contract_adr;
+            const contract_addr = req.params.contract_addr;
             const token_id = req.params.token_id;
-            if (!contract_adr) {
+            if (!contract_addr) {
                 throw "No contract address Found";
             }
             try {
-                return get_nft_info_721(contract_adr, token_id);
+                return get_nft_info_721(contract_addr, token_id);
             } catch (error) {
                 console.log(error);
                 return Boom.badRequest(error);
@@ -376,10 +376,10 @@ const getWalletInfo = async function (wallet_adr, req) {
     return response
 }
 
-const get_nft_info_721 = async (contract_adr, token_id) => {
+const get_nft_info_721 = async (contract_addr, token_id) => {
     const provider = new thetajs.providers.HttpProvider(thetajs.networks.ChainIds.Mainnet);
 
-    const contract = new thetajs.Contract(contract_adr, nft_abi, provider);
+    const contract = new thetajs.Contract(contract_addr, nft_abi, provider);
     let token_uri = await contract.tokenURI(token_id);
     if (token_uri.includes('thetaboard') && process.env.NODE_ENV === 'development') {
         token_uri = token_uri.replace('https://nft.thetaboard.io', 'http://localhost:8000')
@@ -394,7 +394,7 @@ const get_nft_info_721 = async (contract_adr, token_id) => {
     }
 
     const TNT721 = {
-        "contract_adr": contract_adr,
+        "contract_addr": contract_addr,
         "original_token_id": token_id,
         "image": null,
         "name": null,
