@@ -306,7 +306,7 @@ const explorer = function (server, options, next) {
             if (contracts_for_wallet) {
                 NFTs = await Promise.all(contracts_for_wallet.reverse().map(async (contract_idx) => {
                     return get_nft_info_721(contract_idx['contract'], contract_idx['token']);
-                }))
+                }));
             }
             return NFTs.filter((x) => !!x);
         }
@@ -377,15 +377,17 @@ const getWalletInfo = async function (wallet_adr, req) {
 }
 
 const get_nft_info_721 = async (contract_addr, token_id) => {
-    const provider = new thetajs.providers.HttpProvider(thetajs.networks.ChainIds.Mainnet);
-
-    const contract = new thetajs.Contract(contract_addr, nft_abi, provider);
-    let token_uri = await contract.tokenURI(token_id);
-    if (token_uri.includes('thetaboard') && process.env.NODE_ENV === 'development') {
-        token_uri = token_uri.replace('https://nft.thetaboard.io', 'http://localhost:8000')
-    }
     let parsed;
+    let token_uri;
+    let contract;
     try {
+        const provider = new thetajs.providers.HttpProvider(thetajs.networks.ChainIds.Mainnet);
+        contract = new thetajs.Contract(contract_addr, nft_abi, provider);
+        token_uri = await contract.tokenURI(token_id);
+        if (token_uri.includes('thetaboard') && process.env.NODE_ENV === 'development') {
+            token_uri = token_uri.replace('https://nft.thetaboard.io', 'http://localhost:8000')
+        }
+
         parsed = new URL(token_uri);
     } catch (e) {
         console.error("Could not get NFT");
@@ -417,14 +419,14 @@ const get_nft_info_721 = async (contract_addr, token_id) => {
     } else {
         try {
             if (parsed.protocol === 'ipfs:') {
-                token_uri = `https://ipfs.io/${token_uri.replace(':/','')}`
+                token_uri = `https://ipfs.io/${token_uri.replace(':/', '')}`
             }
             const nft_metadata_api = await fetch(token_uri);
             const nft_metadata = await nft_metadata_api.json();
 
             const image_parsed = new URL(nft_metadata['image']);
             if (image_parsed.protocol === 'ipfs:') {
-                nft_metadata['image'] = `https://ipfs.io/${nft_metadata['image'].replace(':/','')}`
+                nft_metadata['image'] = `https://ipfs.io/${nft_metadata['image'].replace(':/', '')}`
             }
             TNT721['image'] = nft_metadata['image'];
             if (nft_metadata.token_id && !nft_metadata['name'].includes("#")) {
@@ -462,6 +464,8 @@ const get_nft_info_721 = async (contract_addr, token_id) => {
                 }
             }
         } catch (e) {
+            console.log("Could not fetch NFT");
+            console.error(e);
             // URL is invalid. Nothing we can do about it...
             return null;
         }
