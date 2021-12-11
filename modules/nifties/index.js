@@ -2,7 +2,15 @@ const Boom = require("@hapi/boom");
 const fs = require("fs");
 const crypto = require("crypto");
 const path = require('path');
+
+// img hash packages and config
 const Jimp = require('jimp');
+const JPEG = require('jpeg-js')
+Jimp.decoders['image/jpeg'] = (data) => JPEG.decode(data, {
+    maxMemoryUsageInMB: 6144,
+})
+
+// video hash packages and config
 const ffmpeg = require('@ffmpeg-installer/ffmpeg');
 const ffprobe = require('@ffprobe-installer/ffprobe');
 const videoHash = require('video-hash')({
@@ -115,8 +123,8 @@ const NIFTIES = function (server, options, next) {
                                         if (data.file.hapi.headers["content-type"].includes('video')) {
                                             nameHash = await videoHash.video(filepath).hash();
                                         } else {
-                                          const img = await Jimp.read(filepath);
-                                          nameHash = img.hash();
+                                            const img = await Jimp.read(filepath);
+                                            nameHash = img.hash();
                                         }
                                         const newPath = filepath.replace(name, nameHash + path.extname(filename));
                                         const newRelativePath = relativePath.replace(name, nameHash + path.extname(filename));
