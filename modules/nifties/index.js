@@ -91,7 +91,7 @@ const NIFTIES = function (server, options, next) {
                         parse: true,
                         allow: 'multipart/form-data',
                         multipart: true,
-                        maxBytes: 1048576 * 30 //30 mb
+                        maxBytes: 1048576 * 100 //100 mb
                     },
                     handler: async (req, res) => {
                         const data = req.payload;
