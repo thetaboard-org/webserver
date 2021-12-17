@@ -131,10 +131,10 @@ module.exports = function (sequelize, DataTypes) {
                 TNT721.token_id = array[TOKEN_ID];
 
             } catch (e) {
-                TNT721.token_id = TOKEN_ID + 1;
+                TNT721.token_id = Number(TOKEN_ID) + 1;
             }
         } else if (TOKEN_ID) {
-            TNT721.token_id = TOKEN_ID + 1;
+            TNT721.token_id = Number(TOKEN_ID) + 1;
         }
 
         return TNT721
