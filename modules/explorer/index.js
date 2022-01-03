@@ -289,26 +289,34 @@ const explorer = function (server, options, next) {
         handler: async (req, h) => {
             const wallet_adr = req.params.wallet_adr;
 
-            const contracts_for_wallet = [];
+            const allNFTs = [];
+            const pageNumber = req.query.pageNumber ? req.query.pageNumber : 1;
+            // get all NFTs for stats purposes
             let index = 0;
             while (true) {
                 const get_contracts_for_wallet = await got(`http://www.thetascan.io/api/nft/?address=${wallet_adr.toLowerCase()}&index=${index}`);
                 const contracts_adr = JSON.parse(get_contracts_for_wallet.body);
                 if (!!contracts_adr) {
-                    contracts_for_wallet.push(...contracts_adr);
+                    allNFTs.push(...contracts_adr);
                     index++;
                 } else {
                     break
                 }
             }
+            // filter only the ones that we want for the current page and get stats
+            const totalNFTs = allNFTs.length;
+            const contracts_for_wallet = allNFTs.reverse().splice((pageNumber - 1) * 12, pageNumber * 12);
 
             let NFTs = []
             if (contracts_for_wallet) {
-                NFTs = await Promise.all(contracts_for_wallet.reverse().map(async (contract_idx) => {
+                NFTs = await Promise.all(contracts_for_wallet.map(async (contract_idx) => {
                     return get_nft_info_721(contract_idx['contract'], contract_idx['token']);
                 }));
             }
-            return NFTs.filter((x) => !!x);
+            return {
+                totalCount: totalNFTs,
+                NFTs: NFTs.filter((x) => !!x)
+            };
         }
     });
 
