@@ -5,6 +5,7 @@ const Boom = require("@hapi/boom");
 const Op = Sequelize.Op;
 const thetajs = require("@thetalabs/theta-js");
 const nft_abi = require("./nft_abi.json")
+const tnt20_abi = require("./tnt20_abi.json");
 const URL = require("url").URL;
 const IMG_EXTENSIONS = ["ase", "art", "bmp", "blp", "cd5", "cit", "cpt", "cr2", "cut", "dds", "dib", "djvu", "egt", "exif", "gif", "gpl", "grf", "icns", "ico", "iff", "jng", "jpeg", "jpg", "jfif", "jp2", "jps", "lbm", "max", "miff", "mng", "msp", "nitf", "ota", "pbm", "pc1", "pc2", "pc3", "pcf", "pcx", "pdn", "pgm", "PI1", "PI2", "PI3", "pict", "pct", "pnm", "pns", "ppm", "psb", "psd", "pdd", "psp", "px", "pxm", "pxr", "qfx", "raw", "rle", "sct", "sgi", "rgb", "int", "bw", "tga", "tiff", "tif", "vtf", "xbm", "xcf", "xpm", "3dv", "amf", "ai", "awg", "cgm", "cdr", "cmx", "dxf", "e2d", "egt", "eps", "fs", "gbr", "odg", "svg", "stl", "vrml", "x3d", "sxd", "v2d", "vnd", "wmf", "emf", "art", "xar", "png", "webp", "jxr", "hdp", "wdp", "cur", "ecw", "iff", "lbm", "liff", "nrrd", "pam", "pcx", "pgf", "sgi", "rgb", "rgba", "bw", "int", "inta", "sid", "ras", "sun", "tga"];
 
@@ -360,6 +361,19 @@ const getWalletInfo = async function (wallet_adr, req) {
         "node_address": null,
         "currency": "tfuel"
     });
+
+    // get tdrop info
+    const provider = new thetajs.providers.HttpProvider(thetajs.networks.ChainIds.Mainnet);
+    const contract = new thetajs.Contract("0x1336739b05c7ab8a526d40dcc0d04a826b5f8b03", tnt20_abi, provider);
+
+    const balance = await contract.balanceOf(wallet_adr);
+    response.push({
+        "amount": balance.toString() / wei_divider,
+        "type": "wallet",
+        "wallet_address": wallet_adr,
+        "node_address": null,
+        "currency": "tdrop"
+    })
 
     // get staked theta/tfuel
     const staked_query = await got(`${req.theta_explorer_api_domain}/api/stake/${wallet_adr}?types[]=vcp&types[]=gcp&types[]=eenp`, theta_explorer_api_params);
