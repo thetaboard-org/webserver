@@ -163,6 +163,12 @@ const manifest = {
                 routes: {
                     prefix: '/nft-assets'
                 }
+            },
+            {
+                plugin: './tnsTokenId',
+                routes: {
+                    prefix: '/tns-token-ids'
+                }
             }
         ]
     }

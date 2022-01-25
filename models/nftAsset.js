@@ -64,7 +64,7 @@ module.exports = function (sequelize, DataTypes) {
             }, {})
         }
     }
-    NFTAsset.sync({alter: true});
+    // NFTAsset.sync({alter: true});
 
     return NFTAsset;
 };
