@@ -290,32 +290,21 @@ const explorer = function (server, options, next) {
         handler: async (req, h) => {
             const wallet_adr = req.params.wallet_adr;
 
-            const allNFTs = [];
             const pageNumber = req.query.pageNumber ? req.query.pageNumber : 1;
             // get all NFTs for stats purposes
-            let index = 0;
-            while (true) {
-                const get_contracts_for_wallet = await got(`http://www.thetascan.io/api/nft/?address=${wallet_adr.toLowerCase()}&index=${index}`);
-                const contracts_adr = JSON.parse(get_contracts_for_wallet.body);
-                if (!!contracts_adr) {
-                    allNFTs.push(...contracts_adr);
-                    index++;
-                } else {
-                    break
-                }
-            }
-            // filter only the ones that we want for the current page and get stats
-            const totalNFTs = allNFTs.length;
-            const contracts_for_wallet = allNFTs.reverse().splice((pageNumber - 1) * 12, pageNumber * 12);
+            const totalCountUrl = await got(`http://www.thetascan.io/api/721/?address=${wallet_adr.toLowerCase()}&type=count`);
+            const totalCount = JSON.parse(totalCountUrl.body).tokens;
+            const get_contracts_for_wallet = await got(`http://www.thetascan.io/api/nft/?address=${wallet_adr.toLowerCase()}&index=${pageNumber - 1}`);
+            const contracts_adr = JSON.parse(get_contracts_for_wallet.body);
 
             let NFTs = []
-            if (contracts_for_wallet) {
-                NFTs = await Promise.all(contracts_for_wallet.map(async (contract_idx) => {
+            if (contracts_adr) {
+                NFTs = await Promise.all(contracts_adr.map(async (contract_idx) => {
                     return get_nft_info_721(contract_idx['contract'], contract_idx['token']);
                 }));
             }
             return {
-                totalCount: totalNFTs,
+                totalCount: totalCount,
                 NFTs: NFTs.filter((x) => !!x)
             };
         }
