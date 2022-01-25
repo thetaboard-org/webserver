@@ -294,12 +294,13 @@ const explorer = function (server, options, next) {
             // get all NFTs for stats purposes
             const totalCountUrl = await got(`http://www.thetascan.io/api/721/?address=${wallet_adr.toLowerCase()}&type=count`);
             const totalCount = JSON.parse(totalCountUrl.body).tokens;
-            const get_contracts_for_wallet = await got(`http://www.thetascan.io/api/nft/?address=${wallet_adr.toLowerCase()}&index=${pageNumber - 1}`);
+            const get_contracts_for_wallet = await got(`http://www.thetascan.io/api/721/?address=${wallet_adr.toLowerCase()}&type=list&sort=date`);
             const contracts_adr = JSON.parse(get_contracts_for_wallet.body);
+            const contracts_for_wallet = contracts_adr.splice((pageNumber - 1) * 12, pageNumber * 12);
 
             let NFTs = []
             if (contracts_adr) {
-                NFTs = await Promise.all(contracts_adr.map(async (contract_idx) => {
+                NFTs = await Promise.all(contracts_for_wallet.map(async (contract_idx) => {
                     return get_nft_info_721(contract_idx['contract'], contract_idx['token']);
                 }));
             }
