@@ -4,10 +4,16 @@ const Sequelize = require('sequelize');
 const Boom = require("@hapi/boom");
 const Op = Sequelize.Op;
 const thetajs = require("@thetalabs/theta-js");
-const nft_abi = require("./nft_abi.json")
-const tnt20_abi = require("./tnt20_abi.json");
 const URL = require("url").URL;
 const IMG_EXTENSIONS = ["ase", "art", "bmp", "blp", "cd5", "cit", "cpt", "cr2", "cut", "dds", "dib", "djvu", "egt", "exif", "gif", "gpl", "grf", "icns", "ico", "iff", "jng", "jpeg", "jpg", "jfif", "jp2", "jps", "lbm", "max", "miff", "mng", "msp", "nitf", "ota", "pbm", "pc1", "pc2", "pc3", "pcf", "pcx", "pdn", "pgm", "PI1", "PI2", "PI3", "pict", "pct", "pnm", "pns", "ppm", "psb", "psd", "pdd", "psp", "px", "pxm", "pxr", "qfx", "raw", "rle", "sct", "sgi", "rgb", "int", "bw", "tga", "tiff", "tif", "vtf", "xbm", "xcf", "xpm", "3dv", "amf", "ai", "awg", "cgm", "cdr", "cmx", "dxf", "e2d", "egt", "eps", "fs", "gbr", "odg", "svg", "stl", "vrml", "x3d", "sxd", "v2d", "vnd", "wmf", "emf", "art", "xar", "png", "webp", "jxr", "hdp", "wdp", "cur", "ecw", "iff", "lbm", "liff", "nrrd", "pam", "pcx", "pgf", "sgi", "rgb", "rgba", "bw", "int", "inta", "sid", "ras", "sun", "tga"];
+
+
+// get ABIs and contract addresses
+const nft_abi = require("./nft_abi.json")
+const tnt20_abi = require("./tnt20_abi.json");
+const marketplace_abi = require("./marketplace_abi.json");
+const marketplace_addr = "0x533c8425897b3E10789C1d6F576b96Cb55E6F47d";
+
 
 global.fetch = require("node-fetch");
 
@@ -291,17 +297,34 @@ const explorer = function (server, options, next) {
             const wallet_adr = req.params.wallet_adr;
 
             const pageNumber = req.query.pageNumber ? req.query.pageNumber : 1;
-            // get all NFTs for stats purposes
+
+            // get currently sold NFT
+
+            const provider = new thetajs.providers.HttpProvider(thetajs.networks.ChainIds.Mainnet);
+            const marketplaceContract = new thetajs.Contract(marketplace_addr, marketplace_abi, provider);
+            const selling_nfts = await marketplaceContract.fetchSellingItemsForAddress(wallet_adr.toLowerCase());
+            const selling_nfts_formated = selling_nfts.filter((nft) => {
+                return !nft.isSold;
+            }).map((nft) => {
+                return {
+                    contract: nft.nftContract,
+                    token: nft.tokenId.toString(),
+                    selling_id: nft.itemId.toString()
+                }
+            });
+
+            // get total count NFTs for pagination purposes
             const totalCountUrl = await got(`http://www.thetascan.io/api/721/?address=${wallet_adr.toLowerCase()}&type=count`);
-            const totalCount = JSON.parse(totalCountUrl.body).tokens;
+            const totalCount = JSON.parse(totalCountUrl.body).tokens + selling_nfts.length;
+
             const get_contracts_for_wallet = await got(`http://www.thetascan.io/api/721/?address=${wallet_adr.toLowerCase()}&type=list&sort=date`);
             const contracts_adr = JSON.parse(get_contracts_for_wallet.body);
-            const contracts_for_wallet = contracts_adr.splice((pageNumber - 1) * 12, pageNumber * 12);
+            const contracts_for_wallet = [...selling_nfts_formated, ...contracts_adr].splice((pageNumber - 1) * 12, pageNumber * 12);
 
             let NFTs = []
             if (contracts_adr) {
                 NFTs = await Promise.all(contracts_for_wallet.map(async (contract_idx) => {
-                    return get_nft_info_721(contract_idx['contract'], contract_idx['token']);
+                    return get_nft_info_721(contract_idx['contract'], contract_idx['token'], contract_idx['selling_id']);
                 }));
             }
             return {
@@ -317,11 +340,20 @@ const explorer = function (server, options, next) {
         handler: async (req, h) => {
             const contract_addr = req.params.contract_addr;
             const token_id = req.params.token_id;
+
+            const provider = new thetajs.providers.HttpProvider(thetajs.networks.ChainIds.Mainnet);
+            const marketplaceContract = new thetajs.Contract(marketplace_addr, marketplace_abi, provider);
+            const selling_nft = await marketplaceContract.getByNftContractTokenId(contract_addr, token_id);
+            let itemId;
+            if (selling_nft.itemId.toString() !== "0") {
+                itemId = selling_nft.itemId.toString()
+            }
+
             if (!contract_addr) {
                 throw "No contract address Found";
             }
             try {
-                return get_nft_info_721(contract_addr, token_id);
+                return get_nft_info_721(contract_addr, token_id, itemId);
             } catch (error) {
                 console.log(error);
                 return Boom.badRequest(error);
@@ -388,12 +420,13 @@ const getWalletInfo = async function (wallet_adr, req) {
     return response
 }
 
-const get_nft_info_721 = async (contract_addr, token_id) => {
+const get_nft_info_721 = async (contract_addr, token_id, selling_id) => {
     let parsed;
     let token_uri;
     let contract;
+    const provider = new thetajs.providers.HttpProvider(thetajs.networks.ChainIds.Mainnet);
+
     try {
-        const provider = new thetajs.providers.HttpProvider(thetajs.networks.ChainIds.Mainnet);
         contract = new thetajs.Contract(contract_addr, nft_abi, provider);
         token_uri = await contract.tokenURI(token_id);
         if (token_uri.includes('thetaboard') && process.env.NODE_ENV === 'development') {
@@ -417,13 +450,28 @@ const get_nft_info_721 = async (contract_addr, token_id) => {
             "artist": null,
             "drop": null,
             "assets": [],
+            "selling_info": null,
         },
         "attributes": null,
-        "token_id": null,
+        "token_id": null
     }
 
-    // if contract is a json, then it is a NFT made by thetadrop
-    // we assume we need to fetch it to get more info about it
+    // add selling info if there is any
+    if (selling_id) {
+        const marketplaceContract = new thetajs.Contract(marketplace_addr, marketplace_abi, provider);
+        const selling_info = await marketplaceContract.getByMarketId(selling_id);
+        TNT721.properties.selling_info = {
+            "itemId": selling_info.itemId.toString(),
+            "nftContract": selling_info.nftContract,
+            "tokenId": selling_info.tokenId.toString(),
+            "seller": selling_info.seller.toString(),
+            "buyer": selling_info.buyer,
+            "category": selling_info.category,
+            "price": selling_info.price.toString()
+        };
+    }
+
+    // if it is an image, then we don't have anything else to fetch
     const extension = parsed.pathname.split('.').pop();
     if (IMG_EXTENSIONS.includes(extension)) {
         TNT721['image'] = token_uri;
