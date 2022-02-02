@@ -81,7 +81,7 @@ const explorer = function (server, options, next) {
 
                 // API calls for live info
                 const [theta_price, blockCountPerHours, supply] = await Promise.all([
-                    got(`https://api.coingecko.com/api/v3/simple/price?ids=theta-token%2Ctheta-fuel&vs_currencies=${currency}&include_24hr_change=true&include_market_cap=true&include_24hr_vol=true`).json(),
+                    got(`https://api.coingecko.com/api/v3/simple/price?ids=theta-token%2Ctheta-fuel%2Cthetadrop&vs_currencies=${currency}&include_24hr_change=true&include_market_cap=true&include_24hr_vol=true`).json(),
                     got(`${req.theta_explorer_api_domain}/api/blocks/number/1`, theta_explorer_api_params).json(),
                     got(`${req.theta_explorer_api_domain}/api/price/all`, theta_explorer_api_params).json()]);
                 const secPerBlock = 3600 / (blockCountPerHours.body.total_num_block);
@@ -103,6 +103,14 @@ const explorer = function (server, options, next) {
                         "volume_24h": theta_price["theta-fuel"][`${currency.toLowerCase()}_24h_vol`],
                         "circulating_supply": supply_tfuel["circulating_supply"],
                         "total_supply": supply_tfuel["total_supply"],
+                    },
+                    tdrop:{
+                        price: theta_price["thetadrop"][currency.toLowerCase()],
+                        "change_24h": theta_price["thetadrop"][`${currency.toLowerCase()}_24h_change`],
+                        "market_cap": theta_price["thetadrop"][`${currency.toLowerCase()}_market_cap`],
+                        "volume_24h": theta_price["thetadrop"][`${currency.toLowerCase()}_24h_vol`],
+                        "circulating_supply": 0,
+                        "total_supply": 0,
                     },
                     dailyPrice: historic_prices.map(x => x.toJSON()['attributes']),
                     secPerBlock: secPerBlock,
@@ -368,7 +376,7 @@ const explorer = function (server, options, next) {
 
 
 const getWalletInfo = async function (wallet_adr, req) {
-    let response = [];
+    const response = [];
     // get theta holding
     const holding = await got(`${req.theta_explorer_api_domain}/api/account/${wallet_adr}`, theta_explorer_api_params);
 

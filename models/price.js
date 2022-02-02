@@ -17,6 +17,10 @@ module.exports = function (sequelize, DataTypes) {
                 type: DataTypes.FLOAT,
                 allowNull: false
             },
+            tdrop_price: {
+                type: DataTypes.FLOAT,
+                allowNull: true // True because it doesn't go abck in time as much as the other ones
+            },
             currency: {
                 type: DataTypes.STRING,
                 allowNull: false
@@ -89,6 +93,9 @@ module.exports = function (sequelize, DataTypes) {
                 const tfuel_price = await got(
                     `https://api.coingecko.com/api/v3/coins/theta-fuel/market_chart/range?vs_currency=${currency}&from=${start_ts}&to=${end_ts}`
                 ).json();
+                const tdrop_price = await got(
+                    `https://api.coingecko.com/api/v3/coins/thetadrop/market_chart/range?vs_currency=${currency}&from=${start_ts}&to=${end_ts}`
+                ).json();
 
                 // if either theta price or tfuel price is not updated for latest day,
                 // don't save the latest price
@@ -103,6 +110,7 @@ module.exports = function (sequelize, DataTypes) {
                         date: Moment(x[0]).utc().format('YYYY-MM-DD'),
                         theta_price: x[1],
                         tfuel_price: tfuel_price.prices[idx][1],
+                        tdrop_price: tdrop_price.prices[idx][1],
                         currency: currency,
                     });
                 }));
