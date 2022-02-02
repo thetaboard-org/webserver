@@ -318,7 +318,11 @@ const explorer = function (server, options, next) {
             const totalCount = JSON.parse(totalCountUrl.body).tokens + selling_nfts.length;
 
             const get_contracts_for_wallet = await got(`http://www.thetascan.io/api/721/?address=${wallet_adr.toLowerCase()}&type=list&sort=date`);
-            const contracts_adr = JSON.parse(get_contracts_for_wallet.body);
+            const contracts_adr = [];
+            if (get_contracts_for_wallet.body !== "null") {
+                contracts_adr.push(...JSON.parse(get_contracts_for_wallet.body));
+            }
+
             const contracts_for_wallet = [...selling_nfts_formated, ...contracts_adr].splice((pageNumber - 1) * 12, pageNumber * 12);
 
             let NFTs = []
@@ -344,16 +348,16 @@ const explorer = function (server, options, next) {
             const provider = new thetajs.providers.HttpProvider(thetajs.networks.ChainIds.Mainnet);
             const marketplaceContract = new thetajs.Contract(marketplace_addr, marketplace_abi, provider);
             const selling_nft = await marketplaceContract.getByNftContractTokenId(contract_addr, token_id);
-            let itemId;
+            let selling_id;
             if (selling_nft.itemId.toString() !== "0") {
-                itemId = selling_nft.itemId.toString()
+                selling_id = selling_nft.itemId.toString()
             }
 
             if (!contract_addr) {
                 throw "No contract address Found";
             }
             try {
-                return get_nft_info_721(contract_addr, token_id, itemId);
+                return get_nft_info_721(contract_addr, token_id, selling_id);
             } catch (error) {
                 console.log(error);
                 return Boom.badRequest(error);
