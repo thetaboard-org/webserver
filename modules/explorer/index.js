@@ -104,7 +104,7 @@ const explorer = function (server, options, next) {
                         "circulating_supply": supply_tfuel["circulating_supply"],
                         "total_supply": supply_tfuel["total_supply"],
                     },
-                    tdrop:{
+                    tdrop: {
                         price: theta_price["thetadrop"][currency.toLowerCase()],
                         "change_24h": theta_price["thetadrop"][`${currency.toLowerCase()}_24h_change`],
                         "market_cap": theta_price["thetadrop"][`${currency.toLowerCase()}_market_cap`],
@@ -398,16 +398,29 @@ const getWalletInfo = async function (wallet_adr, req) {
 
     // get tdrop info
     const provider = new thetajs.providers.HttpProvider(thetajs.networks.ChainIds.Mainnet);
-    const contract = new thetajs.Contract("0x1336739b05c7ab8a526d40dcc0d04a826b5f8b03", tnt20_abi, provider);
+    const contract_tdrop = new thetajs.Contract("0x1336739b05c7ab8a526d40dcc0d04a826b5f8b03", tnt20_abi, provider);
 
-    const balance = await contract.balanceOf(wallet_adr);
+    const balance = await contract_tdrop.balanceOf(wallet_adr);
     response.push({
         "amount": balance.toString() / wei_divider,
         "type": "wallet",
         "wallet_address": wallet_adr,
         "node_address": null,
         "currency": "tdrop"
-    })
+    });
+
+    // get tdrop stacked
+    const contract_tdrop_stacked = new thetajs.Contract("0xA89c744Db76266ecA60e2b0F62Afcd1f8581b7ed", tnt20_abi, provider);
+    const balance_stacked = await contract_tdrop_stacked.estimatedTDropOwnedBy(wallet_adr);
+    if (balance_stacked.toString() !== "0") {
+        response.push({
+            "amount": balance_stacked.div(wei_divider + '').toNumber(),
+            "wallet_address": wallet_adr,
+            "node_address": "0xA89c744Db76266ecA60e2b0F62Afcd1f8581b7ed",
+            "type": "Tdrop Stacking",
+            "currency": "tdrop"
+        });
+    }
 
     // get staked theta/tfuel
     const staked_query = await got(`${req.theta_explorer_api_domain}/api/stake/${wallet_adr}?types[]=vcp&types[]=gcp&types[]=eenp`, theta_explorer_api_params);

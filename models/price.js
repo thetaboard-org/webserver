@@ -106,11 +106,13 @@ module.exports = function (sequelize, DataTypes) {
                     tfuel_price.prices.splice(-1, diff);
                 }
                 const all_models = await Promise.all(theta_price.prices.map(async (x, idx) => {
+                    const tdrop_price_day = tdrop_price.prices[idx] ? tdrop_price.prices[idx][1] : null;
+
                     return Price.upsert({
                         date: Moment(x[0]).utc().format('YYYY-MM-DD'),
                         theta_price: x[1],
                         tfuel_price: tfuel_price.prices[idx][1],
-                        tdrop_price: tdrop_price.prices[idx][1],
+                        tdrop_price: tdrop_price_day,
                         currency: currency,
                     });
                 }));
@@ -121,7 +123,7 @@ module.exports = function (sequelize, DataTypes) {
         }
         return models;
     });
-
+    Price.sync({alter: true});
     return Price;
 };
 
