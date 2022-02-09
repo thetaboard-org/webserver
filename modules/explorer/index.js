@@ -301,7 +301,7 @@ const explorer = function (server, options, next) {
             let NFTs = []
             if (contracts_adr) {
                 NFTs = await Promise.all(contracts_for_wallet.map(async (contract_idx) => {
-                    return get_nft_info_721(contract_idx['contract'], contract_idx['token']);
+                    return get_nft_info_721(contract_idx['contract'], contract_idx['token'], req);
                 }));
             }
             return {
@@ -321,7 +321,7 @@ const explorer = function (server, options, next) {
                 throw "No contract address Found";
             }
             try {
-                return get_nft_info_721(contract_addr, token_id);
+                return get_nft_info_721(contract_addr, token_id, req);
             } catch (error) {
                 console.log(error);
                 return Boom.badRequest(error);
@@ -388,11 +388,41 @@ const getWalletInfo = async function (wallet_adr, req) {
     return response
 }
 
-const get_nft_info_721 = async (contract_addr, token_id) => {
+const get_tns_info_721 = async (contract_addr, token_id, req) => {
+    const TNT721 = {
+        "contract_addr": contract_addr,
+        "original_token_id": token_id,
+        "image": "/assets/nft/tns_placeholder.png",
+        "name": null,
+        "description": null,
+        "properties": {
+            "artist": null,
+            "drop": null,
+            "assets": [],
+        },
+        "attributes": null,
+        "token_id": null,
+    }
+    try {
+        const tnsTokenId = await req.getModel('TnsTokenId').findOne({where: {'tokenId': token_id}});
+        TNT721.name = tnsTokenId ? `${tnsTokenId.name}.theta` : token_id;
+        return TNT721;
+    } catch (e) {
+        console.log("Could not fetch TNS");
+        console.error(e);
+        return null;
+    }
+}
+
+
+const get_nft_info_721 = async (contract_addr, token_id, req) => {
     let parsed;
     let token_uri;
     let contract;
     try {
+        if (contract_addr === '0xbb4d339a7517c81c32a01221ba51cbd5d3461a94') {
+            return await get_tns_info_721(contract_addr, token_id, req);
+        }
         const provider = new thetajs.providers.HttpProvider(thetajs.networks.ChainIds.Mainnet);
         contract = new thetajs.Contract(contract_addr, nft_abi, provider);
         token_uri = await contract.tokenURI(token_id);

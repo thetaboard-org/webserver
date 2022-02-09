@@ -2,11 +2,18 @@ module.exports = function (sequelize, DataTypes) {
     const TnsTokenId = sequelize.define('TnsTokenId', {
         tokenId: {
             type: DataTypes.STRING,
-            allowNull: false
+            allowNull: false,
+            unique: {
+                msg: 'This tokenId is already in the list.'
+            },
         },
         name: {
             type: DataTypes.STRING,
-            allowNull: false
+            allowNull: false,
+            unique: {
+                msg: 'This name is already in the list.'
+            },
+
         },
     },
     { timestamps: false }
