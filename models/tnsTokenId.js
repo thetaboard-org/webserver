@@ -15,9 +15,7 @@ module.exports = function (sequelize, DataTypes) {
             },
 
         },
-    },
-    { timestamps: false }
-    );
+    });
 
     TnsTokenId.prototype.toJSON = function () {
         const toKebabCase = (str) => {
