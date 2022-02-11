@@ -9,9 +9,9 @@ const IMG_EXTENSIONS = ["ase", "art", "bmp", "blp", "cd5", "cit", "cpt", "cr2", 
 
 
 // get ABIs and contract addresses
-const nft_abi = require("./nft_abi.json")
-const tnt20_abi = require("./tnt20_abi.json");
-const marketplace_abi = require("./marketplace_abi.json");
+const nft_abi = require("../../abi/nft_abi.json")
+const tnt20_abi = require("../../abi/tnt20_abi.json");
+const marketplace_abi = require("../../abi/marketplace_abi.json");
 const marketplace_addr = "0x533c8425897b3E10789C1d6F576b96Cb55E6F47d";
 
 
@@ -456,6 +456,7 @@ const get_tns_info_721 = async (contract_addr, token_id, req) => {
             "artist": null,
             "drop": null,
             "assets": [],
+            "selling_info": null,
         },
         "attributes": null,
         "token_id": null,
@@ -576,6 +577,16 @@ const get_nft_info_721 = async (contract_addr, token_id, selling_id, req) => {
                 } catch (e) {
                     //    couldn't get token id
                 }
+            }
+
+            // get total count NFTs for pagination purposes
+            const totalCountUrl = await got(`http://www.thetascan.io/api/721/?address=${wallet_adr.toLowerCase()}&type=count`);
+            const totalCount = JSON.parse(totalCountUrl.body).tokens + selling_nfts.length;
+
+            const get_contracts_for_wallet = await got(`http://www.thetascan.io/api/721/?address=${wallet_adr.toLowerCase()}&type=list&sort=date`);
+            const contracts_adr = [];
+            if (get_contracts_for_wallet.body !== "null") {
+                contracts_adr.push(...JSON.parse(get_contracts_for_wallet.body));
             }
         } catch (e) {
             console.log("Could not fetch NFT");

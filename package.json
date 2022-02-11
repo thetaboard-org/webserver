@@ -27,6 +27,7 @@
     "csv-stringify": "^5.6.5",
     "ethers": "^5.5.3",
     "find-process": "^1.4.4",
+    "flexsearch": "^0.7.21",
     "got": "^11.8.2",
     "hapi-sequelizejs": "^4.4.1",
     "hapijs-status-monitor": "^1.0.1",

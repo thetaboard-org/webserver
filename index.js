@@ -169,6 +169,18 @@ const manifest = {
                 routes: {
                     prefix: '/tns-token-ids'
                 }
+            },
+            {
+                plugin: './tnsTokenId',
+                routes: {
+                    prefix: '/tns-token-ids'
+                }
+            },
+            {
+                plugin: './marketplace',
+                routes: {
+                    prefix: '/marketplace'
+                }
             }
         ]
     }
