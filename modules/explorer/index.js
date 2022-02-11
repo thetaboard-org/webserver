@@ -476,12 +476,11 @@ const get_nft_info_721 = async (contract_addr, token_id, selling_id, req) => {
     let parsed;
     let token_uri;
     let contract;
-
+    const provider = new thetajs.providers.HttpProvider(thetajs.networks.ChainIds.Mainnet);
     try {
         if (contract_addr === '0xbb4d339a7517c81c32a01221ba51cbd5d3461a94') {
             return await get_tns_info_721(contract_addr, token_id, req);
         }
-        const provider = new thetajs.providers.HttpProvider(thetajs.networks.ChainIds.Mainnet);
         contract = new thetajs.Contract(contract_addr, nft_abi, provider);
         token_uri = await contract.tokenURI(token_id);
         if (token_uri.includes('thetaboard') && process.env.NODE_ENV === 'development') {
