@@ -46,7 +46,7 @@ async function initStructure(server) {
 
     uniqueNFTsAddress.map((x) => {
         const tnt721 = explorer.get_nft_info_721(x.nftContract, x.tokenId.toString(), x.itemId, sequelize);
-        index.add(tnt721);
+        index.addAsync(tnt721);
     });
 
     return index;
