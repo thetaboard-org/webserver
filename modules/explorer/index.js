@@ -578,16 +578,6 @@ const get_nft_info_721 = async (contract_addr, token_id, selling_id, req) => {
                     //    couldn't get token id
                 }
             }
-
-            // get total count NFTs for pagination purposes
-            const totalCountUrl = await got(`http://www.thetascan.io/api/721/?address=${wallet_adr.toLowerCase()}&type=count`);
-            const totalCount = JSON.parse(totalCountUrl.body).tokens + selling_nfts.length;
-
-            const get_contracts_for_wallet = await got(`http://www.thetascan.io/api/721/?address=${wallet_adr.toLowerCase()}&type=list&sort=date`);
-            const contracts_adr = [];
-            if (get_contracts_for_wallet.body !== "null") {
-                contracts_adr.push(...JSON.parse(get_contracts_for_wallet.body));
-            }
         } catch (e) {
             console.log("Could not fetch NFT");
             console.error(e);
@@ -598,9 +588,10 @@ const get_nft_info_721 = async (contract_addr, token_id, selling_id, req) => {
     return TNT721;
 }
 
-
+// the get_nft_info_721 is a hack to share function. Should find out how to do that properly...
 module.exports = {
     register: explorer,
     name: 'explorer',
-    version: '1.0.0'
+    version: '1.0.0',
+    get_nft_info_721: get_nft_info_721
 };
