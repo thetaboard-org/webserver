@@ -1,5 +1,6 @@
-const {Index, Document, Worker} = require("flexsearch");
+const {Document} = require("flexsearch");
 const {ethers} = require("ethers");
+
 const explorer = require('../explorer');
 
 // init contract
@@ -16,11 +17,9 @@ const indexFields = ["name", "description",
 const index = new Document({
     document: {
         id: "properties:selling_info:itemId",
-        index: indexFields,
-        store: true,
-        context: true,
+        index: indexFields
     }
-});
+})
 
 marketplaceContract.on("MarketItemCreated", (itemId, nftContract, tokenId, seller, buyer, category, price, isSold, event) => {
     debugger
@@ -44,10 +43,16 @@ async function initStructure(server) {
     const uniqueNFTsAddress = sellingItems.filter((arr, index, self) =>
         index === self.findIndex((t) => (t.save === arr.save && t.nftContract === arr.nftContract)));
 
-    uniqueNFTsAddress.map((x) => {
-        const tnt721 = explorer.get_nft_info_721(x.nftContract, x.tokenId.toString(), x.itemId, sequelize);
-        index.addAsync(tnt721);
+    const allNFTs = [];
+    const allNFTSIndex = {};
+    uniqueNFTsAddress.map(async (x) => {
+        const tnt721 = await explorer.get_nft_info_721(x.nftContract, x.tokenId.toString(), x.itemId, sequelize);
+        allNFTSIndex[tnt721.properties.selling_info.itemId] = allNFTs.push(tnt721) - 1;
     });
+    // add extra info to the index
+    index.totalCount = uniqueNFTsAddress.length;
+    index.allNFTs = allNFTs;
+    index.allNFTSIndex = allNFTSIndex;
 
     return index;
 }
