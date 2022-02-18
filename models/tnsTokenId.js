@@ -10,10 +10,6 @@ module.exports = function (sequelize, DataTypes) {
         name: {
             type: DataTypes.STRING,
             allowNull: false,
-            unique: {
-                msg: 'This name is already in the list.'
-            },
-
         },
     });
 
