@@ -472,29 +472,10 @@ const get_tns_info_721 = async (contract_addr, token_id, req) => {
     }
 }
 
-
-const get_nft_info_721 = async (contract_addr, token_id, selling_id, req) => {
-    let parsed;
-    let token_uri;
-    let contract;
-    const provider = new thetajs.providers.HttpProvider(thetajs.networks.ChainIds.Mainnet);
-    try {
-        if (contract_addr === '0xbb4d339a7517c81c32a01221ba51cbd5d3461a94') {
-            return await get_tns_info_721(contract_addr, token_id, req);
-        }
-        contract = new thetajs.Contract(contract_addr, nft_abi, provider);
-        token_uri = await contract.tokenURI(token_id);
-        if (token_uri.includes('thetaboard') && process.env.NODE_ENV === 'development') {
-            token_uri = token_uri.replace('https://nft.thetaboard.io', 'http://localhost:8000')
-        }
-
-        parsed = new URL(token_uri);
-    } catch (e) {
-        console.error("Could not get NFT");
-        console.error(e);
-        return null;
-    }
-
+const get_info_721 = async (contract_addr, token_id, provider) => {
+    const contract = new thetajs.Contract(contract_addr, nft_abi, provider);
+    let token_uri = await contract.tokenURI(token_id);
+    const parsed = new URL(token_uri);
     const TNT721 = {
         "contract_addr": contract_addr,
         "original_token_id": token_id,
@@ -509,22 +490,7 @@ const get_nft_info_721 = async (contract_addr, token_id, selling_id, req) => {
         },
         "attributes": null,
         "token_id": null
-    }
-
-    // add selling info if there is any
-    if (selling_id) {
-        const marketplaceContract = new thetajs.Contract(marketplace_addr, marketplace_abi, provider);
-        const selling_info = await marketplaceContract.getByMarketId(selling_id);
-        TNT721.properties.selling_info = {
-            "itemId": selling_info.itemId.toString(),
-            "nftContract": selling_info.nftContract,
-            "tokenId": selling_info.tokenId.toString(),
-            "seller": selling_info.seller.toString(),
-            "buyer": selling_info.buyer,
-            "category": selling_info.category,
-            "price": selling_info.price.toString()
-        };
-    }
+    };
 
     // if it is an image, then we don't have anything else to fetch
     const extension = parsed.pathname.split('.').pop();
@@ -586,6 +552,42 @@ const get_nft_info_721 = async (contract_addr, token_id, selling_id, req) => {
         }
     }
     return TNT721;
+}
+
+const getSellingInfo = async (selling_id, provider) => {
+    // add selling info if there is any
+    const marketplaceContract = new thetajs.Contract(marketplace_addr, marketplace_abi, provider);
+    const selling_info = await marketplaceContract.getByMarketId(selling_id);
+    return {
+        "itemId": selling_info.itemId.toString(),
+        "nftContract": selling_info.nftContract,
+        "tokenId": selling_info.tokenId.toString(),
+        "seller": selling_info.seller.toString(),
+        "buyer": selling_info.buyer,
+        "category": selling_info.category,
+        "price": selling_info.price.toString()
+    };
+}
+
+const get_nft_info_721 = async (contract_addr, token_id, selling_id, req) => {
+    const provider = new thetajs.providers.HttpProvider(thetajs.networks.ChainIds.Mainnet);
+    let TNT721;
+    try {
+        // special handling for TNS
+        if (contract_addr.toLowerCase() === '0xbb4d339a7517c81c32a01221ba51cbd5d3461a94') {
+            TNT721 = await get_tns_info_721(contract_addr, token_id, req);
+        } else {
+            TNT721 = await get_info_721(contract_addr, token_id, provider);
+        }
+        if(selling_id){
+            TNT721.properties.selling_info = await getSellingInfo(selling_id, provider);
+        }
+        return TNT721;
+    } catch (e) {
+        console.error("Could not get NFT");
+        console.error(e);
+        return null;
+    }
 }
 
 // the get_nft_info_721 is a hack to share function. Should find out how to do that properly...
