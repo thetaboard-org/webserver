@@ -65,115 +65,115 @@ const manifest = {
             {
                 plugin: './explorer',
                 routes: {
-                    prefix: '/explorer'
+                    prefix: '/api/explorer'
                 }
             },
             {
                 plugin: './auth',
                 routes: {
-                    prefix: '/auth'
+                    prefix: '/api/auth'
                 }
             },
             {
                 plugin: './user',
                 routes: {
-                    prefix: '/users'
+                    prefix: '/api/users'
                 }
             },
             {
                 plugin: './guardian',
                 routes: {
-                    prefix: '/guardian'
+                    prefix: '/api/guardian'
                 }
             },
             {
                 plugin: './tfuelstake',
                 routes: {
-                    prefix: '/tfuelstakes'
+                    prefix: '/api/tfuelstakes'
                 }
             },
             {
                 plugin: './publicEdgeNode',
                 routes: {
-                    prefix: '/public-edge-nodes'
+                    prefix: '/api/public-edge-nodes'
                 }
             },
             {
                 plugin: './wallet',
                 routes: {
-                    prefix: '/wallets'
+                    prefix: '/api/wallets'
                 }
             },
             {
                 plugin: './group',
                 routes: {
-                    prefix: '/groups'
+                    prefix: '/api/groups'
                 }
             },
             {
                 plugin: './affiliate',
                 routes: {
-                    prefix: '/affiliates'
+                    prefix: '/api/affiliates'
                 }
             },
             {
                 plugin: './transactionHistory',
                 routes: {
-                    prefix: '/transaction-histories'
+                    prefix: '/api/transaction-histories'
                 }
             },
             {
                 plugin: './transactionExport',
                 routes: {
-                    prefix: '/transaction-exports.csv'
+                    prefix: '/api/transaction-exports.csv'
                 }
             },
             {
                 plugin: './coinbaseHistory',
                 routes: {
-                    prefix: '/coinbase-histories'
+                    prefix: '/api/coinbase-histories'
                 }
             },
             {
                 plugin: './nifties',
                 routes: {
-                    prefix: '/nft'
+                    prefix: '/api/nft'
                 }
             },
             {
                 plugin: './nft',
                 routes: {
-                    prefix: '/nfts'
+                    prefix: '/api/nfts'
                 }
             },
             {
                 plugin: './drop',
                 routes: {
-                    prefix: '/drops'
+                    prefix: '/api/drops'
                 }
             },
             {
                 plugin: './artist',
                 routes: {
-                    prefix: '/artists'
+                    prefix: '/api/artists'
                 }
             },
             {
                 plugin: './nftAsset',
                 routes: {
-                    prefix: '/nft-assets'
+                    prefix: '/api/nft-assets'
                 }
             },
             {
                 plugin: './tnsTokenId',
                 routes: {
-                    prefix: '/tns-token-ids'
+                    prefix: '/api/tns-token-ids'
                 }
             },
             {
                 plugin: './marketplace',
                 routes: {
-                    prefix: '/marketplace'
+                    prefix: '/api/marketplace'
                 }
             }
         ]
