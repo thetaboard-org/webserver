@@ -305,14 +305,19 @@ const explorer = function (server, options, next) {
             const wallet_adr = req.params.wallet_adr;
 
             const pageNumber = req.query.pageNumber ? req.query.pageNumber : 1;
+            const filterForContract = req.query.contractAddr;
 
             // get currently sold NFT
-
             const provider = new thetajs.providers.HttpProvider(thetajs.networks.ChainIds.Mainnet);
             const marketplaceContract = new thetajs.Contract(marketplace_addr, marketplace_abi, provider);
             const selling_nfts = await marketplaceContract.fetchSellingItemsForAddress(wallet_adr.toLowerCase());
             const selling_nfts_formated = selling_nfts.filter((nft) => {
-                return !nft.isSold;
+                let condition = !nft.isSold;
+                // filter for specific contract
+                if (filterForContract) {
+                    condition = condition && nft.nftContract === filterForContract;
+                }
+                return condition;
             }).map((nft) => {
                 return {
                     contract: nft.nftContract,
@@ -321,15 +326,26 @@ const explorer = function (server, options, next) {
                 }
             });
 
-            // get total count NFTs for pagination purposes
-            const totalCountUrl = await got(`http://www.thetascan.io/api/721/?address=${wallet_adr.toLowerCase()}&type=count`);
-            const totalCount = JSON.parse(totalCountUrl.body).tokens + selling_nfts.length;
+            let totalCount = 0;
+            const contracts_adr =[];
+            if(filterForContract){
+                const NFTsForContract = await got(`http://www.thetascan.io/api/721/?address=${wallet_adr.toLowerCase()}&contract=${filterForContract}`);
+                if (NFTsForContract.body !== "null") {
+                    contracts_adr.push(...JSON.parse(NFTsForContract.body));
+                }
+                totalCount = contracts_adr.length + selling_nfts.length;
 
-            const get_contracts_for_wallet = await got(`http://www.thetascan.io/api/721/?address=${wallet_adr.toLowerCase()}&type=list&sort=date`);
-            const contracts_adr = [];
-            if (get_contracts_for_wallet.body !== "null") {
-                contracts_adr.push(...JSON.parse(get_contracts_for_wallet.body));
+            } else{
+                // get total count NFTs for pagination purposes
+                const totalCountUrl = await got(`http://www.thetascan.io/api/721/?address=${wallet_adr.toLowerCase()}&type=count`);
+                totalCount = JSON.parse(totalCountUrl.body).tokens + selling_nfts.length;
+
+                const get_contracts_for_wallet = await got(`http://www.thetascan.io/api/721/?address=${wallet_adr.toLowerCase()}&type=list&sort=date`);
+                if (get_contracts_for_wallet.body !== "null") {
+                    contracts_adr.push(...JSON.parse(get_contracts_for_wallet.body));
+                }
             }
+
 
             const contracts_for_wallet = [...selling_nfts_formated, ...contracts_adr].splice((pageNumber - 1) * 12, pageNumber * 12);
 

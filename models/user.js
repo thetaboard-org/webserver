@@ -53,7 +53,7 @@ module.exports = function (sequelize, DataTypes) {
         delete values.password;
         return values;
     }
-    User.sync({alter: true});
+    // User.sync({alter: true});
 
     return User;
 };
