@@ -78,7 +78,7 @@ module.exports = function (sequelize, DataTypes) {
             }, {})
         }
     }
-    Drop.sync({alter: true});
+    // Drop.sync({alter: true});
 
     return Drop;
 };

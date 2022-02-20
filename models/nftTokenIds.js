@@ -25,7 +25,7 @@ module.exports = function (sequelize, DataTypes) {
             }
         });
     }
-    nftTokenIds.sync({alter: true});
+    // nftTokenIds.sync({alter: true});
 
 
     return nftTokenIds;

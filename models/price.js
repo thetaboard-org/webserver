@@ -123,7 +123,7 @@ module.exports = function (sequelize, DataTypes) {
         }
         return models;
     });
-    Price.sync({alter: true});
+    // Price.sync({alter: true});
     return Price;
 };
 
