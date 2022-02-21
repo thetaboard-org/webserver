@@ -14,7 +14,7 @@ const marketplace = async function (server, options, next) {
                     const pageNumber = req.query.pageNumber ? req.query.pageNumber : 1;
                     const showPerPage = 20;
                     try {
-                        const sellingNFTs = marketplaceIndex.allNFTs.splice((pageNumber - 1) * showPerPage, pageNumber * showPerPage);
+                        const sellingNFTs = marketplaceIndex.allNFTs.slice((pageNumber - 1) * showPerPage, showPerPage + pageNumber * showPerPage);
                         return {
                             totalCount: marketplaceIndex.totalCount,
                             sellingNFTs: sellingNFTs

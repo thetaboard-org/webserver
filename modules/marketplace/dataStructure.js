@@ -45,19 +45,15 @@ async function initStructure(server) {
     });
 
     // get all NFTs infos and load them in memory
-    const allNFTs = [];
-    const allNFTSIndex = {};
+    index.totalCount = 0;
+    index.allNFTSIndex = {};
+    index.allNFTs = [];
     await Promise.all(sellingItems.map(async (x) => {
         const tnt721 = await explorer.get_nft_info_721(x.nftContract, x.tokenId.toString(), x.itemId, sequelize);
-        allNFTSIndex[x.itemId] = allNFTs.push(tnt721) - 1;
+        index.allNFTSIndex[x.itemId] = index.allNFTs.push(tnt721) - 1;
+        index.totalCount++;
         index.addAsync(tnt721);
     }));
-
-    // add extra info to the index
-    index.totalCount = allNFTSIndex.length;
-    index.allNFTs = allNFTs;
-    index.allNFTSIndex = allNFTSIndex;
-
     return index;
 }
 
