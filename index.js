@@ -137,7 +137,7 @@ const manifest = {
             {
                 plugin: './nifties',
                 routes: {
-                    prefix: '/api/nft'
+                    prefix: '/nft' // Can t change to /api/nft because our NFTs smartcontract point to it....
                 }
             },
             {

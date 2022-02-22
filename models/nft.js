@@ -117,7 +117,9 @@ module.exports = function (sequelize, DataTypes) {
             "token_id": null
         }
         if (NFT.Artist) {
-            TNT721.properties.artist = NFT.Artist.toJSON().attributes;
+            const attributes = NFT.Artist.toJSON().attributes;
+            attributes["id"] = NFT.Artist.id;
+            TNT721.properties.artist = attributes;
         }
         if (NFT.Drop) {
             TNT721.properties.drop = NFT.Drop.toJSON().attributes;

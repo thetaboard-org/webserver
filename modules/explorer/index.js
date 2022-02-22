@@ -467,7 +467,7 @@ const get_tns_info_721 = async (contract_addr, token_id, req) => {
         "original_token_id": token_id,
         "image": "/assets/nft/tns_placeholder.png",
         "name": null,
-        "description": null,
+        "description": "TNS, Theta name service domain",
         "properties": {
             "artist": null,
             "drop": null,
@@ -492,6 +492,9 @@ const get_info_721 = async (contract_addr, token_id, provider) => {
     const contract = new thetajs.Contract(contract_addr, nft_abi, provider);
     let token_uri = await contract.tokenURI(token_id);
     const parsed = new URL(token_uri);
+    if (token_uri.includes('thetaboard') && process.env.NODE_ENV === 'development') {
+        token_uri = token_uri.replace('https://nft.thetaboard.io', 'http://localhost:8000')
+    }
     const TNT721 = {
         "contract_addr": contract_addr,
         "original_token_id": token_id,
