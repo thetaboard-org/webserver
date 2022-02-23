@@ -23,9 +23,6 @@ const nft = function (server, options, next) {
                                 artist: {
                                     data: {"type": "artist", "id": rawNFT.artistId}
                                 },
-                                drop: {
-                                    data: {"type": "drop", "id": rawNFT.dropId}
-                                },
                                 'nft-assets': {
                                     data: rawNFT.NFTAsset.map(x => {
                                         return {
@@ -35,6 +32,11 @@ const nft = function (server, options, next) {
                                     })
                                 }
                             };
+                            if (rawNFT.dropId) {
+                                nft.relationships.drop = {
+                                    data: {"type": "drop", "id": rawNFT.dropId}
+                                }
+                            }
                             response.included.push(...rawNFT.NFTAsset.map(x => {
                                 const model = x.toJSON();
                                 model.relationships = {id: rawNFT.id, type: 'nft'};
@@ -141,17 +143,29 @@ const nft = function (server, options, next) {
                 handler: async function (req, h) {
                     try {
                         const current_user = await req.getModel('User').findOne({where: {'email': req.auth.credentials.email}});
-                        const drop = await req.getModel('Drop').findByPk(
-                            req.payload.data.attributes.dropId,
-                            {include: ['Artist']});
-                        // check if authorized
-                        if (!(req.auth.credentials.scope === 'Admin' ||
-                            drop.Artist.userId === current_user.id)) {
-                            return Boom.unauthorized();
-                        }
 
+                        const dropId = req.payload.data.attributes.dropId
                         const nft = req.getModel('NFT').build(req.payload.data.attributes);
-                        nft.artistId = drop.Artist.id;
+
+                        // If drop id is present, it means that we are creating an NFT from Thetaboard
+                        // otherwise they are claiming an NFT
+                        if (dropId) {
+                            const drop = await req.getModel('Drop').findByPk(
+                                req.dropId,
+                                {include: ['Artist']});
+                            // check if authorized
+                            if (!(req.auth.credentials.scope === 'Admin' ||
+                                drop.Artist.userId === current_user.id)) {
+                                return Boom.unauthorized();
+                            }
+                            nft.artistId = drop.Artist.id;
+                        } else {
+                            const artist = await req.getModel('Artist').findByPk(nft.artistId);
+                            if (!(req.auth.credentials.scope === 'Admin' ||
+                                artist.userId === current_user.id)) {
+                                return Boom.unauthorized();
+                            }
+                        }
                         await nft.save()
                         return {"data": nft.toJSON()};
                     } catch (e) {
