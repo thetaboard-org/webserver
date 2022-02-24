@@ -12,11 +12,11 @@ module.exports = function (sequelize, DataTypes) {
             },
             smallDescription: {
                 type: DataTypes.STRING,
-                allowNull: false
+                allowNull: true
             },
             description: {
                 type: DataTypes.TEXT,
-                allowNull: false
+                allowNull: true
             },
             name: {
                 type: DataTypes.STRING,
@@ -24,7 +24,7 @@ module.exports = function (sequelize, DataTypes) {
             },
             image: {
                 type: DataTypes.STRING,
-                allowNull: false
+                allowNull: true
             },
             nftContractId: {
                 type: DataTypes.STRING,
@@ -42,11 +42,11 @@ module.exports = function (sequelize, DataTypes) {
                 type: DataTypes.ENUM,
                 values: ['open', 'limited', 'auction'],
                 defaultValue: 'open',
-                allowNull: false
+                allowNull: true
             },
             price: {
                 type: DataTypes.INTEGER,
-                allowNull: false
+                allowNull: true
             },
         },
         {

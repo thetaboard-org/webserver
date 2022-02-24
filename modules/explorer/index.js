@@ -327,15 +327,15 @@ const explorer = function (server, options, next) {
             });
 
             let totalCount = 0;
-            const contracts_adr =[];
-            if(filterForContract){
+            const contracts_adr = [];
+            if (filterForContract) {
                 const NFTsForContract = await got(`http://www.thetascan.io/api/721/?address=${wallet_adr.toLowerCase()}&contract=${filterForContract}`);
                 if (NFTsForContract.body !== "null") {
                     contracts_adr.push(...JSON.parse(NFTsForContract.body));
                 }
                 totalCount = contracts_adr.length + selling_nfts.length;
 
-            } else{
+            } else {
                 // get total count NFTs for pagination purposes
                 const totalCountUrl = await got(`http://www.thetascan.io/api/721/?address=${wallet_adr.toLowerCase()}&type=count`);
                 totalCount = JSON.parse(totalCountUrl.body).tokens + selling_nfts.length;
@@ -462,6 +462,11 @@ const getWalletInfo = async function (wallet_adr, req) {
 }
 
 const get_tns_info_721 = async (contract_addr, token_id, req) => {
+
+    const NFT = await req.getModel('NFT').findOne({
+        where: {nftContractId: contract_addr},
+        include: ['Artist']
+    });
     const TNT721 = {
         "contract_addr": contract_addr,
         "original_token_id": token_id,
@@ -469,7 +474,7 @@ const get_tns_info_721 = async (contract_addr, token_id, req) => {
         "name": null,
         "description": "TNS, Theta name service domain",
         "properties": {
-            "artist": null,
+            "artist": NFT ? NFT.Artist.toJSON().attributes : null,
             "drop": null,
             "assets": [],
             "selling_info": null,
