@@ -11,7 +11,7 @@ const marketplaceContract = new ethers.Contract(marketplace_addr, marketplace_ab
 
 const facets = ['artist', 'priceRange', 'category', 'drop'];
 const priceRanges = [[0, 50], [50, 250], [250, 1000], [1000, 10000], [10000, "Infinity"]];
-const categories = ['TNS', 'Art'];
+const categories = [{id: 0, name: 'TNS'}, {id: 1, name: 'Art'}];
 
 //init index
 const indexFields = ["name", "description",
