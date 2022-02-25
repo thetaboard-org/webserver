@@ -65,11 +65,12 @@ const marketplace = async function (server, options, next) {
                     const showPerPage = 20;
                     const mktIdx = marketplaceIndex;
 
-                    const tags = [...mktIdx.facetsParams.map((facetName) => {
+                    const tags = mktIdx.facetsParams.map((facetName) => {
                         return req.query[facetName] ? req.query[facetName].split(',').map((x) => `${facetName}:${x}`) : [];
-                    })].filter((x) => !x);
+                    }).flat();
 
                     const searchResults = mktIdx.search(search, {tag: tags, limit: 500});
+                    // all
                     const searchResultsFlat = searchResults.reduce((acc, val) => acc.concat(val.result), []);
                     const searchResultsUnique = [...new Set(searchResultsFlat)];
 
