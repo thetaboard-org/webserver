@@ -67,9 +67,9 @@ async function initStructure(server) {
         });
 
         if (tnt721.contract_addr === '0xBB4d339a7517c81C32a01221ba51CBd5d3461A94') {
-            tnt721.tags.push(`category:TNS`);
+            tnt721.tags.push(`category:0`);
         } else {
-            tnt721.tags.push(`category:Art`);
+            tnt721.tags.push(`category:1`);
         }
 
         index.addAsync(tnt721);
