@@ -10,7 +10,7 @@ const provider = new ethers.providers.JsonRpcProvider("https://eth-rpc-api.theta
 const marketplaceContract = new ethers.Contract(marketplace_addr, marketplace_abi, provider);
 
 const facets = ['artist', 'priceRange', 'category', 'drop'];
-const priceRanges = [[0, 50], [50, 250], [250, 1000], [1000, 10000], [10000, "Infinity"]];
+const priceRanges = [[0, 49], [50, 249], [250, 999], [1000, 9999], [10000, "Infinity"]];
 const categories = [{id: 0, name: 'TNS'}, {id: 1, name: 'Art'}];
 
 //init index
@@ -41,13 +41,13 @@ async function initStructure(server) {
         tnt721.tags = [];
 
         const priceTfuel = ethers.utils.formatEther(tnt721.properties.selling_info.price);
-        if (priceTfuel <= priceRanges[0][0]) {
+        if (priceTfuel <= priceRanges[0][1]) {
             tnt721.tags.push(`priceRange:${priceRanges[0].join('|')}`);
-        } else if (priceTfuel <= priceRanges[1][0]) {
+        } else if (priceTfuel <= priceRanges[1][1]) {
             tnt721.tags.push(`priceRange:${priceRanges[1].join('|')}`);
-        } else if (priceTfuel <= priceRanges[2][0]) {
+        } else if (priceTfuel <= priceRanges[2][1]) {
             tnt721.tags.push(`priceRange:${priceRanges[2].join('|')}`);
-        } else if (priceTfuel <= priceRanges[3][0]) {
+        } else if (priceTfuel <= priceRanges[3][1]) {
             tnt721.tags.push(`priceRange:${priceRanges[3].join('|')}`);
         } else {
             tnt721.tags.push(`priceRange:${priceRanges[4].join('|')}`);

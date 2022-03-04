@@ -25,7 +25,7 @@ const marketplace = async function (server, options, next) {
                     return {
                         artists: artists,
                         drops: drops,
-                        priceRanges: marketplaceIndex.priceRanges,
+                        priceRanges: marketplaceIndex.priceRanges.map((x)=> x.join('|')),
                         categories: marketplaceIndex.categories
                     }
                 }
@@ -70,7 +70,6 @@ const marketplace = async function (server, options, next) {
                     }).flat();
 
                     const searchResults = mktIdx.search(search, {tag: tags, limit: 500});
-                    // all
                     const searchResultsFlat = searchResults.reduce((acc, val) => acc.concat(val.result), []);
                     const searchResultsUnique = [...new Set(searchResultsFlat)];
 
