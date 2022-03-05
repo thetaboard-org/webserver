@@ -38,8 +38,22 @@ const marketplace = async function (server, options, next) {
                 handler: async function (req, h) {
                     const pageNumber = req.query.pageNumber ? req.query.pageNumber : 1;
                     const showPerPage = 20;
+                    const sortBy = req.query.sortBy ? req.query.sortBy : ""; // only work for price for now
+                    const orderBy = req.query.orderBy ? req.query.orderBy : "";
+
+                    let allNfts;
+                    if (sortBy) {
+                        allNfts = marketplaceIndex.allNFTs.sort((x, y) => {
+                            return x.properties.selling_info.price - y.properties.selling_info.price;
+                        });
+                        if (orderBy && orderBy.toLowerCase() === 'desc') {
+                            allNfts = allNfts.reverse();
+                        }
+                    } else {
+                        allNfts = marketplaceIndex.allNFTs
+                    }
                     try {
-                        const sellingNFTs = marketplaceIndex.allNFTs.slice((pageNumber - 1) * showPerPage, showPerPage + pageNumber * showPerPage);
+                        const sellingNFTs = allNfts.slice((pageNumber - 1) * showPerPage, showPerPage + pageNumber * showPerPage);
                         return {
                             totalCount: marketplaceIndex.totalCount,
                             sellingNFTs: sellingNFTs
@@ -60,12 +74,15 @@ const marketplace = async function (server, options, next) {
                 handler: async function (req, h) {
                     const pageNumber = req.query.pageNumber ? req.query.pageNumber : 1;
                     const search = req.query.search ? req.query.search : "";
-                    const sortBy = req.query.sortBy ? req.query.sortBy : "";
+                    const sortBy = req.query.sortBy ? req.query.sortBy : ""; // only work for price for now
                     const orderBy = req.query.orderBy ? req.query.orderBy : "";
                     const showPerPage = 20;
                     const mktIdx = marketplaceIndex;
 
                     const usedFacets = [];
+                    if (search) {
+                        usedFacets.push("search");
+                    }
                     const tags = mktIdx.facetsParams.map((facetName) => {
                         if (req.query[facetName]) {
                             usedFacets.push(facetName);
@@ -76,6 +93,10 @@ const marketplace = async function (server, options, next) {
                     }).flat();
 
                     const searchResults = mktIdx.search(search, {tag: tags, limit: 500});
+                    if (search && tags.length !== 0) {
+                        // if "search" is present we need to doa  second search to get the tags information
+                        searchResults.push(...mktIdx.search({tag: tags, limit: 500}));
+                    }
                     const searchResultsFlat = searchResults.reduce((acc, val) => acc.concat(val.result), []);
                     let searchResultsUnique = [...new Set(searchResultsFlat)];
 
@@ -86,7 +107,12 @@ const marketplace = async function (server, options, next) {
                             // the result need to be present in at least one of each of the facets used
                             const presentInFacets = [];
                             searchResults.forEach((tagResult) => {
-                                const facet = tagResult.tag.split(':')[0];
+                                let facet;
+                                if (tagResult.tag) {
+                                    facet = tagResult.tag.split(':')[0];
+                                } else {
+                                    facet = 'search';
+                                }
                                 if (presentInFacets.includes(facet)) {
                                     // do nothing
                                 } else if (tagResult.result.includes(result)) {
