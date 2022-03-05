@@ -25,7 +25,7 @@ const marketplace = async function (server, options, next) {
                     return {
                         artists: artists,
                         drops: drops,
-                        priceRanges: marketplaceIndex.priceRanges.map((x)=> x.join('|')),
+                        priceRanges: marketplaceIndex.priceRanges.map((x) => x.join('|')),
                         categories: marketplaceIndex.categories
                     }
                 }
@@ -65,14 +65,39 @@ const marketplace = async function (server, options, next) {
                     const showPerPage = 20;
                     const mktIdx = marketplaceIndex;
 
+                    const usedFacets = [];
                     const tags = mktIdx.facetsParams.map((facetName) => {
-                        return req.query[facetName] ? req.query[facetName].split(',').map((x) => `${facetName}:${x}`) : [];
+                        if (req.query[facetName]) {
+                            usedFacets.push(facetName);
+                            return req.query[facetName].split(',').map((x) => `${facetName}:${x}`);
+                        } else {
+                            return []
+                        }
                     }).flat();
 
                     const searchResults = mktIdx.search(search, {tag: tags, limit: 500});
                     const searchResultsFlat = searchResults.reduce((acc, val) => acc.concat(val.result), []);
-                    const searchResultsUnique = [...new Set(searchResultsFlat)];
+                    let searchResultsUnique = [...new Set(searchResultsFlat)];
 
+                    // implement an AND filter for top level facets
+                    if (usedFacets.length > 1) {
+                        // todo this is a n2 operation which is not the best...
+                        searchResultsUnique = searchResultsUnique.filter((result) => {
+                            // the result need to be present in at least one of each of the facets used
+                            const presentInFacets = [];
+                            searchResults.forEach((tagResult) => {
+                                const facet = tagResult.tag.split(':')[0];
+                                if (presentInFacets.includes(facet)) {
+                                    // do nothing
+                                } else if (tagResult.result.includes(result)) {
+                                    presentInFacets.push(facet)
+                                }
+                            })
+                            return presentInFacets.length === usedFacets.length;
+                        });
+                    }
+
+                    // populate with Objects
                     let searchResultsObjects = searchResultsUnique.map((x) => mktIdx.allNFTs[mktIdx.allNFTSIndex[x]]);
 
                     if (sortBy) {
