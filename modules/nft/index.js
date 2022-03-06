@@ -151,7 +151,7 @@ const nft = function (server, options, next) {
                         // otherwise they are claiming an NFT
                         if (dropId) {
                             const drop = await req.getModel('Drop').findByPk(
-                                req.dropId,
+                                dropId,
                                 {include: ['Artist']});
                             // check if authorized
                             if (!(req.auth.credentials.scope === 'Admin' ||
