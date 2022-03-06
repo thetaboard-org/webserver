@@ -43,7 +43,7 @@ const marketplace = async function (server, options, next) {
 
                     let allNfts;
                     if (sortBy) {
-                        allNfts = marketplaceIndex.allNFTs.sort((x, y) => {
+                        allNfts = [...marketplaceIndex.allNFTs].sort((x, y) => {
                             return x.properties.selling_info.price - y.properties.selling_info.price;
                         });
                         if (orderBy && orderBy.toLowerCase() === 'desc') {
@@ -53,7 +53,7 @@ const marketplace = async function (server, options, next) {
                         allNfts = marketplaceIndex.allNFTs
                     }
                     try {
-                        const sellingNFTs = allNfts.slice((pageNumber - 1) * showPerPage, showPerPage + pageNumber * showPerPage);
+                        const sellingNFTs = allNfts.slice((pageNumber - 1) * showPerPage, showPerPage + (pageNumber - 1) * showPerPage);
                         return {
                             totalCount: marketplaceIndex.totalCount,
                             sellingNFTs: sellingNFTs
@@ -135,7 +135,7 @@ const marketplace = async function (server, options, next) {
                         }
                     }
                     try {
-                        const sellingNFTs = searchResultsObjects.slice((pageNumber - 1) * showPerPage, showPerPage + pageNumber * showPerPage);
+                        const sellingNFTs = searchResultsObjects.slice((pageNumber - 1) * showPerPage, showPerPage + (pageNumber - 1) * showPerPage);
                         return {
                             totalCount: searchResultsObjects.length,
                             sellingNFTs: sellingNFTs

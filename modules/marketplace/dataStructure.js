@@ -33,8 +33,8 @@ async function initStructure(server) {
     const sequelize = server.plugins["hapi-sequelizejs"].thetaboard;
     const sellingItems = await marketplaceContract.fetchSellingItems();
 
-    const indexTNT721 = (tnt721, itemId) => {
-        index.allNFTSIndex[itemId] = index.allNFTs.push(tnt721) - 1;
+    const indexTNT721 = async (tnt721, itemId) => {
+        index.allNFTSIndex[itemId.toNumber()] = index.allNFTs.push(tnt721) - 1;
         index.totalCount++;
 
         // add tags and indexes
@@ -71,15 +71,18 @@ async function initStructure(server) {
         } else {
             tnt721.tags.push(`category:1`);
         }
-
-        index.addAsync(tnt721);
+        console.log(tnt721.tags)
+        console.log(tnt721.name)
+        console.log(index.allNFTSIndex[itemId])
+        console.log(itemId.toNumber())
+        await index.addAsync(tnt721);
     }
 
     const eventHandler = async (itemId, nftContract, tokenId, seller, buyer, category, price, isSold, event) => {
         // if it is a new item we add it;
         const tnt721 = await explorer.get_nft_info_721(nftContract, tokenId.toString(), itemId, sequelize);
         if (!isSold) {
-            indexTNT721(tnt721, itemId);
+            await indexTNT721(tnt721, itemId);
         } else {
             // otherwise we remove it
             index.allNFTs.splice(index.allNFTSIndex[itemId], 1);
@@ -126,7 +129,7 @@ async function initStructure(server) {
             if (!tnt721) {
                 return;
             }
-            indexTNT721(tnt721, x.itemId);
+            await indexTNT721(tnt721, x.itemId);
         }
     }));
     return index;
