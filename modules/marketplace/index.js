@@ -148,6 +148,15 @@ const marketplace = async function (server, options, next) {
                     }
                 }
             }
+        },
+        {
+            path: '/newlyAdded',
+            method: 'GET',
+            options: {
+                handler: async function (req, h) {
+                    return marketplaceIndex.newlyAdded;
+                }
+            }
         }
     ]);
 };

@@ -71,10 +71,10 @@ async function initStructure(server) {
         } else {
             tnt721.tags.push(`category:1`);
         }
-        console.log(tnt721.tags)
-        console.log(tnt721.name)
-        console.log(index.allNFTSIndex[itemId])
-        console.log(itemId.toNumber())
+        index.newlyAdded.push(tnt721);
+        if (index.newlyAdded.length > 10) {
+            index.newlyAdded = index.newlyAdded.slice(-10);
+        }
         await index.addAsync(tnt721);
     }
 
@@ -121,6 +121,7 @@ async function initStructure(server) {
     index.priceRanges = priceRanges;
     index.facetsParams = facets;
     index.categories = categories;
+    index.newlyAdded = [];
 
     await Promise.all(sellingItems.map(async (x) => {
         if (!x.isSold) {
