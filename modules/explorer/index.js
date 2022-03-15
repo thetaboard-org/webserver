@@ -433,7 +433,7 @@ const getWalletInfo = async function (wallet_adr, req) {
             "amount": balance_stacked.div(wei_divider + '').toNumber(),
             "wallet_address": wallet_adr,
             "node_address": "0xA89c744Db76266ecA60e2b0F62Afcd1f8581b7ed",
-            "type": "Tdrop Stacking",
+            "type": "Tdrop Staking",
             "currency": "tdrop"
         });
     }
