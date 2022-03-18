@@ -467,6 +467,12 @@ const get_tns_info_721 = async (contract_addr, token_id, req) => {
         where: {nftContractId: contract_addr},
         include: ['Artist']
     });
+    let artist;
+    if (NFT) {
+        artist = NFT ? NFT.Artist.toJSON().attributes : null;
+        artist["id"] = NFT.Artist.id;
+    }
+
     const TNT721 = {
         "contract_addr": contract_addr,
         "original_token_id": token_id,
@@ -474,7 +480,7 @@ const get_tns_info_721 = async (contract_addr, token_id, req) => {
         "name": null,
         "description": "TNS, Theta name service domain",
         "properties": {
-            "artist": NFT ? NFT.Artist.toJSON().attributes : null,
+            "artist": artist,
             "drop": null,
             "assets": [],
             "selling_info": null,
@@ -603,7 +609,7 @@ const get_nft_info_721 = async (contract_addr, token_id, selling_id, req) => {
         } else {
             TNT721 = await get_info_721(contract_addr, token_id, provider);
         }
-        if(selling_id){
+        if (selling_id) {
             TNT721.properties.selling_info = await getSellingInfo(selling_id, provider);
         }
         return TNT721;
