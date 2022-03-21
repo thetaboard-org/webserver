@@ -43,14 +43,14 @@ const marketplace = async function (server, options, next) {
 
                     let allNfts;
                     if (sortBy) {
-                        allNfts = [...marketplaceIndex.allNFTs].sort((x, y) => {
+                        allNfts = [...marketplaceIndex.allNFTs].filter(n => n).sort((x, y) => {
                             return x.properties.selling_info.price - y.properties.selling_info.price;
                         });
                         if (orderBy && orderBy.toLowerCase() === 'desc') {
                             allNfts = allNfts.reverse();
                         }
                     } else {
-                        allNfts = marketplaceIndex.allNFTs
+                        allNfts = marketplaceIndex.allNFTs.filter(n => n)
                     }
                     try {
                         const sellingNFTs = allNfts.slice((pageNumber - 1) * showPerPage, showPerPage + (pageNumber - 1) * showPerPage);
