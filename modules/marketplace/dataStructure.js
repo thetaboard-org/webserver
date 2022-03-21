@@ -85,7 +85,7 @@ async function initStructure(server) {
             await indexTNT721(tnt721, itemId);
         } else {
             // otherwise we remove it
-            index.allNFTs.splice(index.allNFTSIndex[itemId], 1);
+            index.allNFTs[index.allNFTSIndex[itemId]] = null;
             delete index.allNFTSIndex[itemId];
             index.totalCount--;
             index.removeAsync(itemId);
