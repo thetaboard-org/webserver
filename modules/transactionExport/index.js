@@ -42,7 +42,7 @@ const transactionExport = function (server, options, next) {
                             throw "Request invalid: missing dates";
                         }
 
-                        const wallet_addresses = req.query["wallets"].split(',');
+                        const wallet_addresses = req.query["wallets"].split(',').map((x) => x.toLowerCase());
                         if (!wallet_addresses) {
                             throw "Request invalid: missing wallet address";
                         }
@@ -56,7 +56,7 @@ const transactionExport = function (server, options, next) {
                         // then we build a array of json for each stake and see if it is thetaboard EN or not
                         const public_model = req.getModel('PublicEdgeNode');
                         const private_model = req.getModel('Tfuelstake');
-                            const tfuel_staked = [].concat(...(await Promise.all(wallet_addresses.map(async (wallet_adr) => {
+                        const tfuel_staked = [].concat(...(await Promise.all(wallet_addresses.map(async (wallet_adr) => {
                             const holding = await got(`${req.theta_explorer_api_domain}/api/stake/${wallet_adr}?types[]=eenp`, theta_explorer_api_params);
                             const balances = await JSON.parse(holding.body);
                             return Promise.all(balances.body.sourceRecords.map(async (x) => {
@@ -70,7 +70,10 @@ const transactionExport = function (server, options, next) {
                                         summary: {[Op.like]: x["holder"] + '%'}
                                     }
                                 });
-                                return { "amount": x['amount'] / wei_divider, "is_stake_with_us": is_public || is_private }
+                                return {
+                                    "amount": x['amount'] / wei_divider,
+                                    "is_stake_with_us": is_public || is_private
+                                }
                             }));
                         }))));
 
@@ -88,38 +91,26 @@ const transactionExport = function (server, options, next) {
                             return Boom.unauthorized("");
                         }
 
-                        const start_date_tx = new Date(`${start_date_raw}:`).getTime()/1000;
-                        const end_date_tx = new Date(`${end_date_raw}:`).getTime()/1000;
+                        const start_date_tx = new Date(`${start_date_raw}:`);
+                        const end_date_tx = new Date(`${end_date_raw}:`);
                         const [historic_prices, transaction_histories] = await Promise.all([
                             getHistoricPrices(req, start_date_raw, end_date_raw, currency),
                             getTransactionHistories(req, wallet_addresses, start_date_tx, end_date_tx),
                         ]);
-                        
-                        let finalList= [];
 
-                        finalList.push(...transaction_histories.map((transaction) => {
-                            const date = formatDate(new Date(Number(transaction["tx_timestamp"])*1000));
-                            const prices =  historic_prices.filter(x=>x.date == date)[0];
-                            if (transaction["type"] == 0) {
-                                transaction["typeName"] = "Rewards";
-                            } else if(transaction["type"] == 2) {
-                                transaction["typeName"] = "Transfer";
-                            } else if (transaction["type"] === 9) {
-                                transaction["typeName"] = "Withdraw Stake";
-                            } else if (transaction["type"] === 10) {
-                                transaction["typeName"] = "Deposit Stake";
-                            }
-                            
+                        let finalList = transaction_histories.map((transaction) => {
+                            const date = formatDate(transaction["timestamp"]);
+                            const prices = historic_prices.find(x => x.date === date);
                             return buildPayload(transaction, prices, currency, wallet_addresses);
-                        }));
+                        });
 
                         return stringify(finalList, {
                             header: true
                         }, function (err, dataCSV) {
                             return h.response(dataCSV)
-                            .header('Content-Type', 'text/csv')
-                            .header('Content-Disposition', 'attachment; filename=export.csv;');
-                        });  
+                                .header('Content-Type', 'text/csv')
+                                .header('Content-Disposition', 'attachment; filename=export.csv;');
+                        });
                     } catch (e) {
                         if (e && e.errors) {
                             e = e.errors[0].message;
@@ -132,22 +123,22 @@ const transactionExport = function (server, options, next) {
     ]);
 };
 
-formatDate = function(date) {
+formatDate = function (date) {
     var d = date ? new Date(date) : new Date(),
-      month = '' + (d.getMonth() + 1),
-      day = '' + d.getDate(),
-      year = d.getFullYear();
+        month = '' + (d.getMonth() + 1),
+        day = '' + d.getDate(),
+        year = d.getFullYear();
 
     if (month.length < 2) month = '0' + month;
     if (day.length < 2) day = '0' + day;
     return [year, month, day].join('-');
 };
 
-buildPayload = function(transaction, prices, currency, wallet_addresses) {
-    let result = {
+buildPayload = function (transaction, prices, currency, wallet_addresses) {
+    const result = {
         "Transaction Hash": transaction["hash"],
-        "Timestamp": dateFormat(new Date(Number(transaction["tx_timestamp"]) * 1000), "isoDateTime"),
-        "Transaction Type": transaction["typeName"] ? transaction["typeName"] : transaction["type"],
+        "Timestamp": dateFormat(transaction["timestamp"], "isoDateTime"),
+        "Transaction Type": null,
         "From": transaction["from_address"],
         "To": transaction["to_address"],
         "Theta Amount": transaction["theta"] / wei_divider,
@@ -155,11 +146,24 @@ buildPayload = function(transaction, prices, currency, wallet_addresses) {
     }
     result[`Daily Average Theta Price in ${currency}`] = prices.theta_price;
     result[`Daily Average Tfuel Price in ${currency}`] = prices.tfuel_price;
-    result[`Rewards Value in ${currency}`] = transaction["type"] == 0 ? prices.tfuel_price * transaction["tfuel"] / wei_divider : "NA";
-    if (transaction["fee_tfuel"] != null) {
-        if (transaction["type"] == 9 || wallet_addresses.includes(transaction["from_address"])) {
-            result[`Fee in Tfuel`] = transaction.fee_tfuel / wei_divider;
-            result[`Fee in ${currency}`] = prices.tfuel_price * transaction.fee_tfuel / wei_divider;        
+    result[`Rewards Value in ${currency}`] = transaction["type"] === 0 ? prices.tfuel_price * transaction["tfuel"] / wei_divider : "NA";
+
+    if (transaction["type"] === 0) {
+        result["Transaction Type"] = "Rewards";
+    } else if (transaction["type"] === 2) {
+        result["Transaction Type"] = "Transfer";
+    } else if (transaction["type"] === 9) {
+        result["Transaction Type"] = "Withdraw Stake";
+    } else if (transaction["type"] === 10) {
+        result["Transaction Type"] = "Deposit Stake";
+    } else {
+        result["Transaction Type"] = transaction["type"];
+    }
+
+    if (transaction["fee_tfuel"]) {
+        if (transaction["type"] === 9 || wallet_addresses.includes(transaction["from_address"])) {
+            result[`Fee in Tfuel`] = transaction["fee_tfuel"] / wei_divider;
+            result[`Fee in ${currency}`] = prices.tfuel_price * transaction["fee_tfuel"] / wei_divider;
         } else {
             result[`Fee in Tfuel`] = "NA";
             result[`Fee in ${currency}`] = "NA";
@@ -172,30 +176,30 @@ buildPayload = function(transaction, prices, currency, wallet_addresses) {
     return result;
 };
 
-getTransactionHistories = async function(req, wallet_addresses, start_date_tx, end_date_tx) {
-    return await req.getModel('TransactionHistory').findAll({
-        where: {
-            [Op.or]: [
-                {
-                    from_address: {
-                        [Op.or]: wallet_addresses
-                    }
-                },
-                {
-                    to_address: {
-                        [Op.or]: wallet_addresses
-                    }
-                },
-            ],
-            type: {
-                [Op.or]: [0, 2, 9, 10]
+getTransactionHistories = async function (req, wallet_addresses, start_date_tx, end_date_tx) {
+    const transactions_collection = req.mongo.db.collection('transaction')
+    const match = {
+        "$and": [
+            {
+                "$or": [...wallet_addresses.map((wallet) => {
+                    return {"from_address": wallet}
+                }),
+                    ...wallet_addresses.map((wallet) => {
+                        return {"to_address": wallet}
+                    })
+                ]
             },
-            tx_timestamp: {
-                [Op.between]: [start_date_tx, end_date_tx]
+            {
+                type: {
+                    "$in": [0, 2, 9, 10]
+                }
             },
-        },
-        order: [['tx_timestamp', 'DESC']]
-    });
+            {
+                timestamp: {$gte: start_date_tx, $lte: end_date_tx}
+            },
+        ]
+    }
+    return transactions_collection.find(match).sort({"timestamp": 1}).toArray();
 };
 
 getHistoricPrices = async function (req, start_date_raw, end_date_raw, currency) {

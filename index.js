@@ -63,6 +63,13 @@ const manifest = {
                 ],
             },
             {
+              plugin: require('hapi-mongodb'),
+              options: {
+                  url: 'mongodb://15.204.140.60:27017/thetaboard',
+                  decorate: true
+              }
+            },
+            {
                 plugin: './explorer',
                 routes: {
                     prefix: '/api/explorer'
