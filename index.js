@@ -65,7 +65,7 @@ const manifest = {
             {
               plugin: require('hapi-mongodb'),
               options: {
-                  url: 'mongodb://15.204.140.60:27017/thetaboard',
+                  url: `mongodb://${secrets.database.user}:${process.env.MYSQL_PASS}@${process.env.DB}:${process.env.MONGO_PORT || 27017}/thetaboard`,
                   decorate: true
               }
             },
