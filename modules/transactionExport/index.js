@@ -52,53 +52,14 @@ const transactionExport = function (server, options, next) {
                             throw "Request invalid: missing currency";
                         }
 
-                        // First we check if 50% of total wallets are staked with thetaboard
-                        // then we build a array of json for each stake and see if it is thetaboard EN or not
-                        const public_model = req.getModel('PublicEdgeNode');
-                        const private_model = req.getModel('Tfuelstake');
-                        const tfuel_staked = [].concat(...(await Promise.all(wallet_addresses.map(async (wallet_adr) => {
-                            const holding = await got(`${req.theta_explorer_api_domain}/api/stake/${wallet_adr}?types[]=eenp`, theta_explorer_api_params);
-                            const balances = await JSON.parse(holding.body);
-                            return Promise.all(balances.body.sourceRecords.map(async (x) => {
-                                const is_public = await public_model.count({
-                                    where: {
-                                        summary: {[Op.like]: x["holder"] + '%'}
-                                    }
-                                });
-                                const is_private = await private_model.count({
-                                    where: {
-                                        summary: {[Op.like]: x["holder"] + '%'}
-                                    }
-                                });
-                                return {
-                                    "amount": x['amount'] / wei_divider,
-                                    "is_stake_with_us": is_public || is_private
-                                }
-                            }));
-                        }))));
-
-                        // compute the sum of all staked for thetaboard vs not thetaboard ENs
-                        const sum_with_us_and_not = tfuel_staked.reduce((acc, el, i) => {
-                            if (el["is_stake_with_us"]) {
-                                acc[0] += el['amount'];
-                            } else {
-                                acc[1] += el['amount'];
-                            }
-                            return acc;
-                        }, [0, 0]);
-                        // Finally return error if not
-                        if (sum_with_us_and_not[0] < sum_with_us_and_not[1]) {
-                            return Boom.unauthorized("");
-                        }
-
-                        const start_date_tx = new Date(`${start_date_raw}:`);
-                        const end_date_tx = new Date(`${end_date_raw}:`);
+                        const start_date_tx = new Date(`${start_date_raw}:`).getTime()/1000;
+                        const end_date_tx = new Date(`${end_date_raw}:`).getTime()/1000;
                         const [historic_prices, transaction_histories] = await Promise.all([
                             getHistoricPrices(req, start_date_raw, end_date_raw, currency),
                             getTransactionHistories(req, wallet_addresses, start_date_tx, end_date_tx),
                         ]);
 
-                        let finalList = transaction_histories.map((transaction) => {
+                        const finalList = transaction_histories.map((transaction) => {
                             const date = formatDate(transaction["timestamp"]);
                             const prices = historic_prices.find(x => x.date === date);
                             return buildPayload(transaction, prices, currency, wallet_addresses);
