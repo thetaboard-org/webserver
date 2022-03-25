@@ -15,11 +15,6 @@ module.exports = function (sequelize, DataTypes) {
                 type: DataTypes.FLOAT,
                 allowNull: true
             },
-            //link affiliate record
-            affiliateId: {
-                type: DataTypes.INTEGER,
-                allowNull: true,
-            },
             splitRewards: {
                 type: DataTypes.BOOLEAN,
                 allowNull: true,
