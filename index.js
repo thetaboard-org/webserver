@@ -43,7 +43,7 @@ const manifest = {
                         models: [__dirname + '/models/**/*.js'], // paths/globs to model files
                         ignoredModels: [__dirname + '/models/index.js'], // OPTIONAL: paths/globs to ignore files
                         sequelize: new Sequelize('thetaboard', secrets.database.user, secrets.database.password, {
-                            host: process.env.DB,
+                            host: process.env.DB || "maria",
                             dialect: 'mariadb',
                             port: process.env.DB_PORT || 3306,
                             dialectOptions: {
@@ -65,7 +65,7 @@ const manifest = {
             {
               plugin: require('hapi-mongodb'),
               options: {
-                  url: `mongodb://${secrets.database.user}:${secrets.database.password}@${process.env.DB}:${process.env.MONGO_PORT || 27017}/thetaboard`,
+                  url: `mongodb://${secrets.database.user}:${secrets.database.password}@${process.env.MONGO || "mongo"}:${process.env.MONGO_PORT || 27017}/thetaboard`,
                   decorate: true
               }
             },
