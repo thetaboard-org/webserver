@@ -52,8 +52,8 @@ const transactionExport = function (server, options, next) {
                             throw "Request invalid: missing currency";
                         }
 
-                        const start_date_tx = new Date(`${start_date_raw}:`).getTime()/1000;
-                        const end_date_tx = new Date(`${end_date_raw}:`).getTime()/1000;
+                        const start_date_tx = new Date(`${start_date_raw}:`);
+                        const end_date_tx = new Date(`${end_date_raw}:`);
                         const [historic_prices, transaction_histories] = await Promise.all([
                             getHistoricPrices(req, start_date_raw, end_date_raw, currency),
                             getTransactionHistories(req, wallet_addresses, start_date_tx, end_date_tx),
@@ -160,7 +160,7 @@ getTransactionHistories = async function (req, wallet_addresses, start_date_tx, 
             },
         ]
     }
-    return transactions_collection.find(match).sort({"timestamp": 1}).toArray();
+    return transactions_collection.find(match).sort({"timestamp": -1}).toArray();
 };
 
 getHistoricPrices = async function (req, start_date_raw, end_date_raw, currency) {

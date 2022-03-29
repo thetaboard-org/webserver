@@ -47,8 +47,8 @@ const transactionHistory = function (server, options, next) {
                         })
                     ]
                 }
-                const [totalTx, transaction_list] = await Promise.all(transactions_collection.count(match),
-                    transactions_collection.find(match).sort({timestamp: -1}).skip(offset).limit(limitNumber).toArray());
+                const [totalTx, transaction_list] = await Promise.all([transactions_collection.count(match),
+                    transactions_collection.find(match).sort({timestamp: -1}).skip(offset).limit(limitNumber).toArray()]);
                 const pagination = {
                     currentPageNumber: pageNumber,
                     totalPageNumber: Math.ceil(totalTx / limitNumber)
