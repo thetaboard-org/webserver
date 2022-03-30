@@ -25,7 +25,7 @@ const coinbaseHistory = function (server, options, next) {
                         const tsLastWeek = new Date(new Date().setDate(new Date().getDate() - 7));
                         const tsLastMonth = new Date(new Date().setMonth(new Date().getMonth() - 1));
                         const tsLastSixMonths = new Date(new Date().setMonth(new Date().getMonth() - 6));
-                        const GN_REWARDS = [12, 11.88, 11.76, 11.64, 11.52];
+                        const GN_REWARDS = [12.00 * wei_divider, 11.88 * wei_divider, 11.76 * wei_divider, 11.64 * wei_divider, 11.52 * wei_divider];
                         const GN_CONDITION = {
                             "$or": GN_REWARDS.map((x) => {
                                 return {"$eq": [{"$mod": ["$tfuel", x]}, 0]}
@@ -206,7 +206,7 @@ const coinbaseHistory = function (server, options, next) {
                                             "count": x[`last_six_months_${type}_count`],
                                             "tfuel": x[`last_six_months_${type}_sum`],
                                             "to-address": x["_id"],
-                                            "value": x[`last_six_months_${type}_sum`]/ wei_divider,
+                                            "value": x[`last_six_months_${type}_sum`] / wei_divider,
                                             "tfuel-price": x[`last_six_months_${type}_count`] / wei_divider * tfuel_price
                                         }
                                     }
