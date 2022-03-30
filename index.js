@@ -65,7 +65,7 @@ const manifest = {
             {
               plugin: require('hapi-mongodb'),
               options: {
-                  url: `mongodb://${secrets.database.user}:${secrets.database.password}@${process.env.MONGO || "mongo"}:${process.env.MONGO_PORT || 27017}/thetaboard`,
+                  url: `mongodb://${secrets.database.user}:${secrets.database.password}@${process.env.MONGO || "mongo"}:${process.env.MONGO_PORT || 27017}/thetaboard?authSource=admin`,
                   decorate: true
               }
             },
