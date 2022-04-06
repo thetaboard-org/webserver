@@ -1,4 +1,6 @@
-const Boom = require('@hapi/boom')
+const Boom = require('@hapi/boom');
+const {Op} = require('sequelize')
+
 
 const drop = function (server, options, next) {
     server.route([
@@ -8,13 +10,53 @@ const drop = function (server, options, next) {
             options: {
                 handler: async function (req, h) {
                     try {
-                        let drops;
-                        if (req.query) {
-                            drops = await req.getModel('Drop').findAll({where: req.query});
-                        } else {
-                            drops = await req.getModel('Drop').findAll();
+                        const pageNumber = req.query.pageNumber ? Number(req.query.pageNumber) : 1;
+                        const sortBy = req.query.sortBy ? req.query.sortBy : "endDate";
+                        const showPerPage = 6;
+                        const options = {where: {}};
+                        const today = new Date();
+
+                        if (req.query.isLive) {
+                            options.where.startDate = {
+                                [Op.lte]: today
+                            };
+                            options.where.endDate = {
+                                [Op.gte]: today
+                            }
+                        } else if (req.query.isEnded) {
+                            options.where.endDate = {
+                                [Op.lte]: today
+                            }
+                        } else if (req.query.isComing) {
+                            options.where[Op.or] =
+                                [{
+                                    startDate: {
+                                        [Op.gte]: today
+                                    }
+                                }, {isDeployed: false}]
+
                         }
+                        if (req.query.isPublic) {
+                            options.where.isPublic = req.query.isPublic;
+                        }
+                        if (req.query.isSponsored) {
+                            options.where.isSponsored = req.query.isSponsored
+                        }
+                        if (pageNumber) {
+                            options.limit = showPerPage;
+                            options.offset = (pageNumber - 1) * showPerPage;
+                        }
+                        if (sortBy) {
+                            options.order = [[sortBy, "ASC"]]
+                        }
+                        if(req.query.artistId){
+                            options.where.artistId = req.query.artistId;
+                        }
+                        const drops = await req.getModel('Drop').findAll(options);
+                        const drops_count = await req.getModel('Drop').count(options);
+
                         return {
+                            "meta": {"total": drops_count},
                             "data": await Promise.all(drops.map(async rawDrop => {
                                 const drop = rawDrop.toJSON();
                                 const rawNFTs = await req.getModel('NFT').findAll({where: {'dropId': rawDrop.id}});
