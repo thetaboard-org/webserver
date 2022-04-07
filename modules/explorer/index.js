@@ -499,7 +499,7 @@ const get_tns_info_721 = async (contract_addr, token_id, req) => {
     }
 }
 
-const get_info_721 = async (contract_addr, token_id, provider) => {
+const get_info_721 = async (contract_addr, token_id, provider, req) => {
     const contract = new thetajs.Contract(contract_addr, nft_abi, provider);
     let token_uri = await contract.tokenURI(token_id);
     const parsed = new URL(token_uri);
@@ -551,6 +551,19 @@ const get_info_721 = async (contract_addr, token_id, provider) => {
                 TNT721.properties.drop = nft_metadata.properties.drop;
                 TNT721.properties.assets = nft_metadata.properties.assets;
             }
+            // if we didn't got the artist info form the web, we try to get it from our DB
+            if(!TNT721.properties.artist){
+                const NFT = await req.getModel('NFT').findOne({
+                    where: {nftContractId: contract_addr},
+                    include: ['Artist']
+                });
+                if (NFT) {
+                    const artist = NFT ? NFT.Artist.toJSON().attributes : null;
+                    artist["id"] = NFT.Artist.id;
+                    TNT721.properties.artist = artist;
+                }
+            }
+
             if (nft_metadata.attributes) {
                 TNT721.attributes = nft_metadata.attributes;
             }
@@ -607,7 +620,7 @@ const get_nft_info_721 = async (contract_addr, token_id, selling_id, req) => {
         if (contract_addr.toLowerCase() === '0xbb4d339a7517c81c32a01221ba51cbd5d3461a94') {
             TNT721 = await get_tns_info_721(contract_addr, token_id, req);
         } else {
-            TNT721 = await get_info_721(contract_addr, token_id, provider);
+            TNT721 = await get_info_721(contract_addr, token_id, provider, req);
         }
         if (selling_id) {
             TNT721.properties.selling_info = await getSellingInfo(selling_id, provider);
