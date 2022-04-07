@@ -39,6 +39,9 @@ const marketplace = async function (server, options, next) {
                     if (sortBy) {
                         const sort = {"properties.selling_info.price": orderBy === "desc" ? -1 : 1}
                         cursor.sort(sort).collation({locale: "en_US", numericOrdering: true});
+                    } else {
+                        const sort = {"properties.selling_info.itemId": -1}
+                        cursor.sort(sort).collation({locale: "en_US", numericOrdering: true});
                     }
 
                     try {
@@ -94,8 +97,8 @@ const marketplace = async function (server, options, next) {
                     } else if(search){
                         cursor.sort({score: {$meta: 'textScore'}});
                     } else {
-                        const sort = {dateAdded: 1}
-                        cursor.sort(sort)
+                        const sort = {"properties.selling_info.itemId": -1}
+                        cursor.sort(sort).collation({locale: "en_US", numericOrdering: true});
                     }
 
                     try {
