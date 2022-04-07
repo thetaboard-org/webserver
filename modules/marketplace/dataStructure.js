@@ -57,7 +57,7 @@ async function initStructure(server) {
 
     //Create Index
     try {
-        marketplaceCollection.createIndex({"properties.selling_info.itemId": 1});
+        marketplaceCollection.createIndex({"properties.selling_info.itemId": -1});
         marketplaceCollection.createIndex({"tags": 1});
         marketplaceCollection.createIndex({
                 "name": "text",

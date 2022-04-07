@@ -602,7 +602,7 @@ const getSellingInfo = async (selling_id, provider) => {
     const marketplaceContract = new thetajs.Contract(marketplace_addr, marketplace_abi, provider);
     const selling_info = await marketplaceContract.getByMarketId(selling_id);
     return {
-        "itemId": selling_info.itemId.toString(),
+        "itemId": Number(selling_info.itemId.toString()),
         "nftContract": selling_info.nftContract,
         "tokenId": selling_info.tokenId.toString(),
         "seller": selling_info.seller.toString(),
