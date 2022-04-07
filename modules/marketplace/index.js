@@ -94,7 +94,7 @@ const marketplace = async function (server, options, next) {
                     if (sortBy) {
                         const sort = {"properties.selling_info.price": orderBy === "desc" ? -1 : 1}
                         cursor.sort(sort).collation({locale: "en_US", numericOrdering: true});
-                    } else if(search){
+                    } else if (search) {
                         cursor.sort({score: {$meta: 'textScore'}});
                     } else {
                         const sort = {"properties.selling_info.itemId": -1}
@@ -123,7 +123,10 @@ const marketplace = async function (server, options, next) {
             options: {
                 handler: async function (req, h) {
                     const marketplaceCollection = server.mongo.db.collection('marketplace');
-                    return marketplaceCollection.find().sort({"dateAdded": 1}).limit(20);
+                    const cursor = marketplaceCollection.find()
+                    const sort = {"properties.selling_info.itemId": -1}
+                    cursor.sort(sort).collation({locale: "en_US", numericOrdering: true});
+                    return cursor.toArray()
                 }
             }
         }
