@@ -474,7 +474,7 @@ const get_tns_info_721 = async (contract_addr, token_id, req) => {
     }
 
     const TNT721 = {
-        "contract_addr": contract_addr,
+        "contract_addr": contract_addr.toLowerCase(),
         "original_token_id": token_id,
         "image": "/assets/nft/tns_placeholder.png",
         "name": null,
@@ -507,7 +507,7 @@ const get_info_721 = async (contract_addr, token_id, provider) => {
         token_uri = token_uri.replace('https://nft.thetaboard.io', 'http://localhost:8000')
     }
     const TNT721 = {
-        "contract_addr": contract_addr,
+        "contract_addr": contract_addr.toLowerCase(),
         "original_token_id": token_id,
         "image": null,
         "name": null,

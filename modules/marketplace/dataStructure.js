@@ -1,4 +1,3 @@
-const {Document} = require("flexsearch");
 const {ethers} = require("ethers");
 
 const explorer = require('../explorer');
@@ -13,97 +12,88 @@ const facets = ['artist', 'priceRange', 'category', 'drop'];
 const priceRanges = [[0, 49], [50, 249], [250, 999], [1000, 9999], [10000, "Infinity"]];
 const categories = [{id: 0, name: 'TNS'}, {id: 1, name: 'Art'}];
 
-//init index
-const indexFields = ["name", "description",
-    "properties:artist:name", "properties:artist:bio",
-    "properties:drop:name", "properties:drop:description"];
 
-const index = new Document({
-    document: {
-        id: "properties:selling_info:itemId",
-        index: indexFields,
-        tag: "tags",
-    },
-    tokenize: "forward",
-})
+const indexTNT721 = async (tnt721, marketplaceCollection) => {
+    // add tags and indexes
+    tnt721.tags = [];
 
+    const priceTfuel = ethers.utils.formatEther(tnt721.properties.selling_info.price);
+    if (priceTfuel <= priceRanges[0][1]) {
+        tnt721.tags.push(`priceRange:${priceRanges[0].join('|')}`);
+    } else if (priceTfuel <= priceRanges[1][1]) {
+        tnt721.tags.push(`priceRange:${priceRanges[1].join('|')}`);
+    } else if (priceTfuel <= priceRanges[2][1]) {
+        tnt721.tags.push(`priceRange:${priceRanges[2].join('|')}`);
+    } else if (priceTfuel <= priceRanges[3][1]) {
+        tnt721.tags.push(`priceRange:${priceRanges[3].join('|')}`);
+    } else {
+        tnt721.tags.push(`priceRange:${priceRanges[4].join('|')}`);
+    }
+
+    ['artist', 'drop'].forEach((facetName) => {
+        if (tnt721.properties[facetName]) {
+            const id = tnt721.properties[facetName].id
+            tnt721.tags.push(`${facetName}:${id}`);
+        }
+    });
+
+    if (tnt721.contract_addr.toLowerCase() === '0xbb4d339a7517c81c32a01221ba51cbd5d3461a94') {
+        tnt721.tags.push(`category:0`);
+    } else {
+        tnt721.tags.push(`category:1`);
+    }
+
+    tnt721.dateAdded = new Date();
+    await marketplaceCollection.updateOne(
+        {"properties.selling_info.itemId": tnt721.properties.selling_info.itemId},
+        {"$set": tnt721},
+        {upsert: true});
+}
 
 // Make a singleton;
 async function initStructure(server) {
     const sequelize = server.plugins["hapi-sequelizejs"].thetaboard;
+    const marketplaceCollection = server.mongo.db.collection('marketplace');
+
+    //Create Index
+    try {
+        marketplaceCollection.createIndex({"properties.selling_info.itemId": 1});
+        marketplaceCollection.createIndex({"tags": 1});
+        marketplaceCollection.createIndex({
+                "name": "text",
+                "description": "text",
+                "properties.artist.name": "text",
+                "properties.artist.bio": "text",
+                "properties.drop.name": "text",
+                "properties.drop.description": "text"
+            },
+            {
+                weights: {
+                    "name": 10,
+                    "description": 5,
+                    "properties.artist.name": 8,
+                    "properties.artist.bio": 3,
+                    "properties.drop.name": 8,
+                    "properties.drop.description": 3
+                },
+                name: "TextIndex"
+            });
+    } catch (e) {
+        // do nothing if index already exists
+    }
+
     const sellingItems = await marketplaceContract.fetchSellingItems();
 
-    const indexTNT721 = async (tnt721, itemId) => {
-        index.allNFTSIndex[itemId.toNumber()] = index.allNFTs.push(tnt721) - 1;
-        index.totalCount++;
-
-        // add tags and indexes
-        tnt721.tags = [];
-
-        const priceTfuel = ethers.utils.formatEther(tnt721.properties.selling_info.price);
-        if (priceTfuel <= priceRanges[0][1]) {
-            tnt721.tags.push(`priceRange:${priceRanges[0].join('|')}`);
-        } else if (priceTfuel <= priceRanges[1][1]) {
-            tnt721.tags.push(`priceRange:${priceRanges[1].join('|')}`);
-        } else if (priceTfuel <= priceRanges[2][1]) {
-            tnt721.tags.push(`priceRange:${priceRanges[2].join('|')}`);
-        } else if (priceTfuel <= priceRanges[3][1]) {
-            tnt721.tags.push(`priceRange:${priceRanges[3].join('|')}`);
-        } else {
-            tnt721.tags.push(`priceRange:${priceRanges[4].join('|')}`);
-        }
-
-        ['artist', 'drop'].forEach((facetName) => {
-            if (tnt721.properties[facetName]) {
-                const id = tnt721.properties[facetName].id
-                const facet = index[facetName][id];
-                // update name and increment sells
-                index[facetName][id] = {
-                    'name': tnt721.properties[facetName].name,
-                    sellingItems: facet ? facet.sellingItems++ : 1
-                };
-                tnt721.tags.push(`${facetName}:${id}`);
-            }
-        });
-
-        if (tnt721.contract_addr === '0xBB4d339a7517c81C32a01221ba51CBd5d3461A94') {
-            tnt721.tags.push(`category:0`);
-        } else {
-            tnt721.tags.push(`category:1`);
-        }
-        index.newlyAdded.push(tnt721);
-        if (index.newlyAdded.length > 10) {
-            index.newlyAdded = index.newlyAdded.slice(-10);
-        }
-        await index.addAsync(tnt721);
-    }
 
     const eventHandler = async (itemId, nftContract, tokenId, seller, buyer, category, price, isSold, event) => {
         // if it is a new item we add it;
         const tnt721 = await explorer.get_nft_info_721(nftContract, tokenId.toString(), itemId, sequelize);
         if (!isSold) {
-            await indexTNT721(tnt721, itemId);
+            console.log("Adding new item to marketplace : ", itemId);
+            await indexTNT721(tnt721, marketplaceCollection);
         } else {
-            // otherwise we remove it
-            index.allNFTs[index.allNFTSIndex[itemId]] = null;
-            delete index.allNFTSIndex[itemId];
-            index.totalCount--;
-            index.removeAsync(itemId);
-
-            ['artist', 'drop'].forEach((facetName) => {
-                if (tnt721.properties[facetName]) {
-                    const id = tnt721.properties[facetName].id
-                    const facet = index[facetName][id];
-                    // update name and increment sells
-                    if (facet && facet.sellingItems === 1) {
-                        delete index[facetName][id];
-                    }
-                    index[facetName][id] = {
-                        'name': tnt721.properties[facetName].name,
-                        sellingItems: facet ? facet.sellingItems-- : 1
-                    };
-                }
-            });
+            console.log("Removing item from marketplace : ", itemId);
+            marketplaceCollection.deleteOne({"properties.selling_info.itemId": itemId.toString()});
         }
     }
 
@@ -111,31 +101,70 @@ async function initStructure(server) {
 
     marketplaceContract.on("MarketItemSale", eventHandler);
 
+    const item_ids = sellingItems.map((x) => x.itemId.toString());
 
-    // get all NFTs infos and load them in memory
-    index.totalCount = 0;
-    index.allNFTSIndex = {};
-    index.allNFTs = [];
-    index.artist = {};
-    index.drop = {};
-    index.priceRanges = priceRanges;
-    index.facetsParams = facets;
-    index.categories = categories;
-    index.newlyAdded = [];
-
+    const result = await marketplaceCollection.deleteMany({"properties.selling_info.itemId": {"$nin": item_ids}});
+    console.log("Deleted " + result.deletedCount + " item from marketplace");
+    const to_index = await marketplaceCollection.aggregate([{
+        $match: {
+            "properties.selling_info.itemId": {
+                $in: item_ids
+            }
+        }
+    },
+        {
+            $group: {
+                _id: null,
+                found: {
+                    "$addToSet": "$properties.selling_info.itemId"
+                }
+            }
+        },
+        {
+            "$addFields": {
+                fullList: item_ids
+            }
+        },
+        {
+            "$addFields": {
+                notfound: {
+                    "$setDifference": [
+                        "$fullList",
+                        "$found"
+                    ]
+                }
+            }
+        }
+    ]).toArray();
     await Promise.all(sellingItems.map(async (x) => {
-        if (!x.isSold) {
+        if (!x.isSold && (to_index.length === 0 || to_index["0"].notfound.includes(x.itemId.toString()))) {
             const tnt721 = await explorer.get_nft_info_721(x.nftContract, x.tokenId.toString(), x.itemId, sequelize);
             // if nft is not valid, do not show
             if (!tnt721) {
                 return;
             }
-            await indexTNT721(tnt721, x.itemId);
+            return indexTNT721(tnt721, marketplaceCollection);
         }
     }));
-    return index;
+    console.log(`Done initializing marketplace`);
+}
+
+async function updateNFTInfo(req, nft) {
+    const marketplaceCollection = req.mongo.db.collection('marketplace');
+    const sellingItems = await marketplaceCollection.find({contract_addr: nft.nftContractId.toLowerCase()}).toArray();
+    sellingItems.map(async (x) => {
+        const tnt721 = await explorer.get_nft_info_721(x.contract_addr, x.original_token_id, x.properties.selling_info.itemId, req);
+        if (!tnt721) {
+            return;
+        }
+        return indexTNT721(tnt721, marketplaceCollection);
+    })
+    // if nft is not valid, do not show
+
 }
 
 module.exports = {
     initStructure: initStructure,
+    updateInfo: updateNFTInfo,
+    facets: {types: facets, priceRanges: priceRanges, categories: categories}
 }

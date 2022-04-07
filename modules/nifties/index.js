@@ -28,20 +28,16 @@ const NIFTIES = function (server, options, next) {
                     cors: true,
                     handler: async (req, h) => {
                         try {
-                            const NFT_ID = req.params.NFT_ID;
+                            let NFT_ID = req.params.NFT_ID;
                             const TOKEN_ID = req.params.TOKEN_ID;
                             let NFT;
                             if (NFT_ID === "thetaboard-first") {
-                                NFT = await req.getModel('NFT').findOne({
-                                    where: {name: "Thetaboard Early Adopter"},
+                                NFT_ID = 1
+                            }
+                            NFT = await req.getModel('NFT').findByPk(NFT_ID,
+                                {
                                     include: ['Artist', 'Drop', 'NFTAsset', 'NftTokenId']
                                 });
-                            } else {
-                                NFT = await req.getModel('NFT').findByPk(NFT_ID,
-                                    {
-                                        include: ['Artist', 'Drop', 'NFTAsset', 'NftTokenId']
-                                    });
-                            }
 
                             return NFT.toERC721(TOKEN_ID);
                         } catch (e) {

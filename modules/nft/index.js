@@ -1,4 +1,6 @@
-const Boom = require('@hapi/boom')
+const Boom = require('@hapi/boom');
+const marketplace = require('../marketplace/dataStructure')
+
 
 const nft = function (server, options, next) {
     server.route([
@@ -166,7 +168,8 @@ const nft = function (server, options, next) {
                                 return Boom.unauthorized();
                             }
                         }
-                        await nft.save()
+                        await nft.save();
+                        marketplace.updateInfo(req, nft);
                         return {"data": nft.toJSON()};
                     } catch (e) {
                         if (e && e.errors) {
