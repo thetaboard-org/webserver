@@ -159,7 +159,7 @@ const coinbaseHistory = function (server, options, next) {
                             ['en', 'gn'].forEach((type) => {
                                 acc.push(...[
                                     {
-                                        "id": x["to_address"] + 'last_day' + type,
+                                        "id": x["_id"] + 'last_day' + type,
                                         "type": 'coinbase-history',
                                         "attributes": {
                                             "type": type,
@@ -172,7 +172,7 @@ const coinbaseHistory = function (server, options, next) {
                                         }
                                     },
                                     {
-                                        "id": x["to_address"] + 'last_week' + type,
+                                        "id": x["_id"] + 'last_week' + type,
                                         "type": 'coinbase-history',
                                         "attributes": {
                                             "type": type,
@@ -185,7 +185,7 @@ const coinbaseHistory = function (server, options, next) {
                                         }
                                     },
                                     {
-                                        "id": x["to_address"] + 'last_month' + type,
+                                        "id": x["_id"] + 'last_month' + type,
                                         "type": 'coinbase-history',
                                         "attributes": {
                                             "type": type,
@@ -198,7 +198,7 @@ const coinbaseHistory = function (server, options, next) {
                                         }
                                     },
                                     {
-                                        "id": x["to_address"] + 'last_six_months' + type,
+                                        "id": x["_id"] + 'last_six_months' + type,
                                         "type": 'coinbase-history',
                                         "attributes": {
                                             "type": type,
