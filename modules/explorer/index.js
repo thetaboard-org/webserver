@@ -302,62 +302,54 @@ const explorer = function (server, options, next) {
         path: '/wallet-nft/{wallet_adr}',
         method: 'GET',
         handler: async (req, h) => {
+            // params
+            const showPerPage = 12;
             const wallet_adr = req.params.wallet_adr;
-
             const pageNumber = req.query.pageNumber ? req.query.pageNumber : 1;
             const filterForContract = req.query.contractAddr;
 
+            // return var
+            const NFTs721 = [];
+
             // get currently sold NFT
-            const provider = new thetajs.providers.HttpProvider(thetajs.networks.ChainIds.Mainnet);
-            const marketplaceContract = new thetajs.Contract(marketplace_addr, marketplace_abi, provider);
-            const selling_nfts = await marketplaceContract.fetchSellingItemsForAddress(wallet_adr.toLowerCase());
-            const selling_nfts_formated = selling_nfts.filter((nft) => {
-                let condition = !nft.isSold;
-                // filter for specific contract
-                if (filterForContract) {
-                    condition = condition && nft.nftContract === filterForContract;
-                }
-                return condition;
-            }).map((nft) => {
-                return {
-                    contract: nft.nftContract,
-                    token: nft.tokenId.toString(),
-                    selling_id: nft.itemId.toString()
-                }
-            });
-
-            let totalCount = 0;
-            const contracts_adr = [];
+            const marketplaceCollection = req.mongo.db.collection('marketplace');
+            const conditionSell = {"properties.selling_info.seller": wallet_adr.toLowerCase()};
             if (filterForContract) {
-                const NFTsForContract = await got(`http://www.thetascan.io/api/721/?address=${wallet_adr.toLowerCase()}&contract=${filterForContract}`);
-                if (NFTsForContract.body !== "null") {
-                    contracts_adr.push(...JSON.parse(NFTsForContract.body));
-                }
-                totalCount = contracts_adr.length + selling_nfts.length;
-
-            } else {
-                // get total count NFTs for pagination purposes
-                const totalCountUrl = await got(`http://www.thetascan.io/api/721/?address=${wallet_adr.toLowerCase()}&type=count`);
-                totalCount = JSON.parse(totalCountUrl.body).tokens + selling_nfts.length;
-
-                const get_contracts_for_wallet = await got(`http://www.thetascan.io/api/721/?address=${wallet_adr.toLowerCase()}&type=list&sort=date`);
-                if (get_contracts_for_wallet.body !== "null") {
-                    contracts_adr.push(...JSON.parse(get_contracts_for_wallet.body));
-                }
+                conditionSell.contract_addr = filterForContract
             }
+            const sellingItems721 = await marketplaceCollection.find(conditionSell)
+                .skip((pageNumber - 1) * showPerPage).limit(showPerPage).toArray();
+            NFTs721.push(...sellingItems721);
+            const sellingItemsCount = await marketplaceCollection.count(conditionSell);
 
+            // get NFTs
+            const nftCollection = req.mongo.db.collection('nft');
+            const conditionWallet = {"owner": wallet_adr.toLowerCase()};
+            if (filterForContract) {
+                conditionWallet.contract = filterForContract
+            }
+            if (sellingItems721.length < showPerPage) {
+                const to_skip = Math.max(0, ((pageNumber - 1) * showPerPage) - sellingItemsCount);
+                const limit = 12 - sellingItems721.length;
+                const walletNFTs = await nftCollection.find(conditionWallet).sort({blockNumber: -1})
+                    .skip(to_skip).limit(limit).toArray();
+                const walletsNFTs721 = await Promise.all(walletNFTs.map(async (nft) => {
+                    if (nft.tnt721) {
+                        return nft.tnt721;
+                    } else {
+                        const tnt721 = await get_nft_info_721(nft['contract'], nft['tokenId'], null, req);
+                        nftCollection.updateOne({_id: nft._id}, {$set: {tnt721: tnt721}});
+                        return tnt721;
 
-            const contracts_for_wallet = [...selling_nfts_formated, ...contracts_adr].splice((pageNumber - 1) * 12, pageNumber * 12);
-
-            let NFTs = []
-            if (contracts_adr) {
-                NFTs = await Promise.all(contracts_for_wallet.map(async (contract_idx) => {
-                    return get_nft_info_721(contract_idx['contract'], contract_idx['token'], contract_idx['selling_id'], req);
+                    }
                 }));
+                NFTs721.push(...walletsNFTs721);
             }
+            const walletCount = await nftCollection.count(conditionWallet);
+
             return {
-                totalCount: totalCount,
-                NFTs: NFTs.filter((x) => !!x)
+                totalCount: walletCount + sellingItemsCount,
+                NFTs: NFTs721
             };
         }
     });
@@ -552,7 +544,7 @@ const get_info_721 = async (contract_addr, token_id, provider, req) => {
                 TNT721.properties.assets = nft_metadata.properties.assets;
             }
             // if we didn't got the artist info form the web, we try to get it from our DB
-            if(!TNT721.properties.artist){
+            if (!TNT721.properties.artist) {
                 const NFT = await req.getModel('NFT').findOne({
                     where: {nftContractId: contract_addr},
                     include: ['Artist']
@@ -603,9 +595,9 @@ const getSellingInfo = async (selling_id, provider) => {
     const selling_info = await marketplaceContract.getByMarketId(selling_id);
     return {
         "itemId": Number(selling_info.itemId.toString()),
-        "nftContract": selling_info.nftContract,
+        "nftContract": selling_info.nftContract.toLowerCase(),
         "tokenId": selling_info.tokenId.toString(),
-        "seller": selling_info.seller.toString(),
+        "seller": selling_info.seller.toString().toLowerCase(),
         "buyer": selling_info.buyer,
         "category": selling_info.category,
         "price": selling_info.price.toString()

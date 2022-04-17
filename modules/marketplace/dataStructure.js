@@ -57,6 +57,7 @@ async function initStructure(server) {
 
     //Create Index
     try {
+        marketplaceCollection.createIndex({"properties.selling_info.seller": 1});
         marketplaceCollection.createIndex({"properties.selling_info.itemId": -1});
         marketplaceCollection.createIndex({"tags": 1});
         marketplaceCollection.createIndex({
@@ -101,7 +102,7 @@ async function initStructure(server) {
 
     marketplaceContract.on("MarketItemSale", eventHandler);
 
-    const item_ids = sellingItems.map((x) => x.itemId.toString());
+    const item_ids = sellingItems.map((x) => Number(x.itemId));
 
     const result = await marketplaceCollection.deleteMany({"properties.selling_info.itemId": {"$nin": item_ids}});
     console.log("Deleted " + result.deletedCount + " item from marketplace");
