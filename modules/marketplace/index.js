@@ -1,10 +1,10 @@
 const Boom = require('@hapi/boom')
-const marketplaceData = require('./dataStructure')
+const {marketplace} = require('../../services')
 
-const marketplace = async function (server, options, next) {
+const marketplaceRoute = async function (server, options, next) {
     // init marketplace data structure/search engine
     server.ext("onPostStart", async () => {
-        marketplaceData.initStructure(server);
+        marketplace.initStructure(server);
     });
 
     server.route([
@@ -16,8 +16,8 @@ const marketplace = async function (server, options, next) {
                     const artists = await req.getModel('Artist').findAll();
                     const drops = await req.getModel('Drop').findAll({where: {isPublic: true}});
                     return {
-                        priceRanges: marketplaceData.facets.priceRanges.map((x) => x.join('|')),
-                        categories: marketplaceData.facets.categories,
+                        priceRanges: marketplace.facets.priceRanges.map((x) => x.join('|')),
+                        categories: marketplace.facets.categories,
                         artists: artists,
                         drops: drops
                     }
@@ -75,7 +75,7 @@ const marketplace = async function (server, options, next) {
 
                     const filter = {}
 
-                    marketplaceData.facets.types.forEach((facet) => {
+                    marketplace.facets.types.forEach((facet) => {
                         if (req.query[facet]) {
                             if (!filter['$and']) {
                                 filter['$and'] = [];
@@ -135,7 +135,7 @@ const marketplace = async function (server, options, next) {
 
 
 module.exports = {
-    register: marketplace,
+    register: marketplaceRoute,
     name: 'marketplace',
     version: '1.0.0'
 };
