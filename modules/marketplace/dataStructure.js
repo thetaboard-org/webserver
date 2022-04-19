@@ -5,7 +5,7 @@ const explorer = require('../explorer');
 // init contract
 const marketplace_abi = require("../../abi/marketplace_abi.json");
 const marketplace_addr = "0x533c8425897b3E10789C1d6F576b96Cb55E6F47d";
-const provider = new ethers.providersWebSocketProvider("ws://142.44.213.241:18889/rpc");;
+const provider = new ethers.providers.WebSocketProvider("ws://142.44.213.241:18889/rpc");
 const marketplaceContract = new ethers.Contract(marketplace_addr, marketplace_abi, provider);
 
 const facets = ['artist', 'priceRange', 'category', 'drop'];
