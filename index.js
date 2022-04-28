@@ -2,6 +2,8 @@ const Glue = require('@hapi/glue');
 const Path = require('path');
 const Sequelize = require('sequelize');
 const secrets = require("./config/secrets.json")
+const services = require("./services");
+const {promises: fs} = require("fs");
 
 // Server port
 const HTTP_PORT = process.env.PORT || 8000;
@@ -58,16 +60,15 @@ const manifest = {
                                 idle: 10000
                             }
                         }), // sequelize instance
-                        sync: true, // sync models - default false
+                        sync: false, // sync models - default false
                     },
                 ],
             },
             {
-              plugin: require('hapi-mongodb'),
-              options: {
-                  url: `mongodb://${secrets.database.user}:${secrets.database.password}@${process.env.MONGO || "mongo"}:${process.env.MONGO_PORT || 27017}/thetaboard?authSource=admin`,
-                  decorate: true
-              }
+                plugin: require('@y-io/hapi-mongoose'),
+                options: {
+                    connString: `mongodb://${secrets.database.user}:${secrets.database.password}@${process.env.MONGO || "mongo"}:${process.env.MONGO_PORT || 27017}/thetaboard?authSource=admin`,
+                }
             },
             {
                 plugin: './explorer',
@@ -217,8 +218,30 @@ const init = async () => {
         return h.continue;
     });
 
+    // init models and services
+    server.ext("onPostStart", async () => {
+        // register models
+        const connection = server.hmongoose.connection;
+        for (const model of await fs.readdir("./models_mongo")) {
+            const modelName = model.split('.')[0];
+            const mongooseModel = require(`./models_mongo/${modelName}`);
+            const modelInstance = new mongooseModel(server);
+            connection.model(modelName, modelInstance);
+        }
+        console.log("Initialized models")
+
+        // init services
+        for (const [serviceName, service] of Object.entries(services)) {
+            server.app[serviceName] = new service(server);
+        }
+        console.log("Initialized services")
+    });
+
+
     await server.start();
     console.log('Server running at: %s://%s:%s', server.info.protocol, server.info.address, server.info.port);
+
+
 }
 
 init();
