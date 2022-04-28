@@ -90,11 +90,11 @@ async function initStructure(server) {
         // if it is a new item we add it;
         const tnt721 = await explorer.get_nft_info_721(nftContract, tokenId.toString(), itemId, sequelize);
         if (!isSold) {
-            console.log("Adding new item to marketplace : ", Number(itemId.toString()));
+            console.log("Adding new item to marketplace : ", itemId.toNumber());
             await indexTNT721(tnt721, marketplaceCollection);
         } else {
-            console.log("Removing item from marketplace : ", Number(itemId.toString()));
-            marketplaceCollection.deleteOne({"properties.selling_info.itemId": Number(itemId.toString())});
+            console.log("Removing item from marketplace : ", itemId.toNumber());
+            marketplaceCollection.deleteOne({"properties.selling_info.itemId": itemId.toNumber()});
         }
     }
 
