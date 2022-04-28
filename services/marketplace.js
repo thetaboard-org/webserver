@@ -4,7 +4,6 @@ const explorer = require('../modules/explorer');
 
 // init contract
 const marketplace_abi = require("../abi/marketplace_abi.json");
-const {init} = require("./offer");
 const marketplace_addr = "0x533c8425897b3E10789C1d6F576b96Cb55E6F47d";
 const provider = new ethers.providers.JsonRpcProvider("http://142.44.213.241:18888/rpc");
 const marketplaceContract = new ethers.Contract(marketplace_addr, marketplace_abi, provider);
@@ -14,7 +13,7 @@ const priceRanges = [[0, 49], [50, 249], [250, 999], [1000, 9999], [10000, "Infi
 const categories = [{id: 0, name: 'TNS'}, {id: 1, name: 'Art'}];
 
 
-class Marketplace{
+class Marketplace {
     server;
 
     constructor(server) {
@@ -22,7 +21,7 @@ class Marketplace{
         this.initStructure();
     }
 
-    async initStructure(){
+    async initStructure() {
         const server = this.server;
         const nftCollection = server.hmongoose.connection.models.nft;
 
@@ -71,30 +70,30 @@ class Marketplace{
                 if (!nft) {
                     return;
                 }
-                return this._addSellingInfo(nft, x.itemId.toString(), x.seller, x.price.toString(), x.category);
+                return this._indexTNT721(nft, x.itemId.toString(), x.seller, x.price.toString(), x.category);
             }
         }));
 
         console.log(`Done initializing marketplace`);
     }
 
-    async _eventHandler (itemId, nftContract, tokenId, seller, buyer, category, price, isSold, event) {
+    async _eventHandler(itemId, nftContract, tokenId, seller, buyer, category, price, isSold, event) {
         const nftCollection = this.server.hmongoose.connection.models.nft;
 
         // if it is a new item we add it;
         const nft = await nftCollection.getOrCreate(nftContract.toLowerCase(), tokenId.toString());
         if (!isSold) {
             console.log("Adding new item to marketplace : ", Number(itemId.toString()));
-            await this._addSellingInfo(nft, itemId, seller, price, category);
+            await this._indexTNT721(nft, itemId, seller, price, category);
         } else {
             console.log("Removing item from marketplace : ", Number(itemId.toString()));
-            const id = `${tnt721.contract_addr}:${tnt721.original_token_id}`;
+            const id = `${nftContract}:${tokenId}`;
             nftCollection.updateOne({_id: id},
                 {"$set": {"tnt721.properties.selling_info": null, "tnt721.tags": null}});
         }
     }
 
-    async _addSellingInfo (nft, itemId, seller, price, category){
+    async _indexTNT721(nft, itemId, seller, price, category) {
         // add tags and indexes
         const tags = [];
 
@@ -148,9 +147,12 @@ class Marketplace{
         // if nft is not valid, do not show
 
     }
+
+    get facets() {
+        return {types: facets, priceRanges: priceRanges, categories: categories}
+    }
+
 }
 
 
 module.exports = Marketplace;
-
-// facets: {types: facets, priceRanges: priceRanges, categories: categories}

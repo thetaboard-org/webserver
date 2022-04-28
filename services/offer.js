@@ -89,13 +89,13 @@ class Offer {
         return await nft.save();
     }
 
-    async _indexOffer(itemId, nftContract, tokenId, offerer, offered, price) {
+    async _indexOffer(itemId, nftContract, tokenId, offerer, offered, price, event) {
         const nftCollection = this.server.hmongoose.connection.models.nft;
         const nft = await nftCollection.getOrCreate(nftContract.toLowerCase(), tokenId.toString());
         return await this._addOffers(nft, itemId.toString(), offerer, price.toString());
     }
 
-    async _removeOffer(itemId, nftContract, tokenId, offerer, offered, price) {
+    async _removeOffer(itemId, nftContract, tokenId, offerer, offered, price, event) {
         const nftCollection = this.server.hmongoose.connection.models.nft;
         const nft = await nftCollection.getOrCreate(nftContract.toLowerCase(), tokenId.toString());
         nft.tnt721.properties.offers = nft.tnt721.properties.offers.filter(x => x.itemId === itemId);
