@@ -138,7 +138,7 @@ async function initStructure(server) {
         }
     ]).toArray();
     await Promise.all(sellingItems.map(async (x) => {
-        if (!x.isSold && (to_index.length === 0 || to_index["0"].notfound.includes(x.itemId.toString()))) {
+        if (!x.isSold && (to_index.length === 0 || to_index["0"].notfound.includes(x.itemId.toNumber()))) {
             const tnt721 = await explorer.get_nft_info_721(x.nftContract, x.tokenId.toString(), x.itemId, sequelize);
             // if nft is not valid, do not show
             if (!tnt721) {
