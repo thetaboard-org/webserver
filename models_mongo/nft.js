@@ -8,17 +8,14 @@ class NFT {
 
     constructor(server) {
         this.server = server;
-        this._schema = this.schema;
         this._index();
         this._statics();
         return this._schema;
     }
 
     get schema() {
-        if (this._schema) {
-            return this._schema;
-        } else {
-            return new Schema({
+        if (!this._schema) {
+            this._schema = new Schema({
                 "_id": String,
                 "contract": {type: String, lowercase: true, index: true},
                 "owner": {type: String, lowercase: true},
@@ -52,6 +49,7 @@ class NFT {
                 }
             }, {collection: 'nft'});
         }
+        return this._schema;
     }
 
     _index() {

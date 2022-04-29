@@ -89,7 +89,7 @@ class Marketplace {
             console.log("Removing item from marketplace : ", Number(itemId.toString()));
             const id = `${nftContract}:${tokenId}`;
             nftCollection.updateOne({_id: id},
-                {"$set": {"tnt721.properties.selling_info": null, "tnt721.tags": null}});
+                {"$set": {"tnt721.properties.selling_info": null}});
         }
     }
 
@@ -135,6 +135,7 @@ class Marketplace {
     }
 
     async updateNFTInfo(req, nft) {
+        throw new Error("Not Implemented");
         const nftCollection = req.mongo.db.collection('nft');
         const sellingItems = await nftCollection.find({contract: nft.nftContractId.toLowerCase()}).toArray();
         sellingItems.map(async (x) => {

@@ -81,6 +81,8 @@ class Offer {
                 return this._addOffers(nft, x.itemId.toString(), x.offerer, x.price.toString());
             }
         }));
+
+        console.log(`Done initializing offers`);
     }
 
     async _addOffers(nft, itemId, offerer, price) {

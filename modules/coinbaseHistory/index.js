@@ -38,7 +38,8 @@ const coinbaseHistory = function (server, options, next) {
                             })
                         }
 
-                        const transactions_collection = req.mongo.db.collection('transaction')
+                        const transactions_collection = server.hmongoose.connection.models.transaction;
+
                         const match = {
                             "$and": [
                                 {
@@ -153,7 +154,7 @@ const coinbaseHistory = function (server, options, next) {
                             {"$project": project},
                             {"$group": group}
                         ]
-                        const coinbase_list = await transactions_collection.aggregate(pipeline).toArray();
+                        const coinbase_list = await transactions_collection.aggregate(pipeline);
 
                         const coinbase_history = coinbase_list.reduce((acc, x) => {
                             ['en', 'gn'].forEach((type) => {
