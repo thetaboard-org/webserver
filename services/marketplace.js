@@ -134,21 +134,6 @@ class Marketplace {
         return await nft.save();
     }
 
-    async updateNFTInfo(req, nft) {
-        throw new Error("Not Implemented");
-        const nftCollection = req.mongo.db.collection('nft');
-        const sellingItems = await nftCollection.find({contract: nft.nftContractId.toLowerCase()}).toArray();
-        sellingItems.map(async (x) => {
-            const tnt721 = await explorer.get_nft_info_721(x.contract, x.tokenId, x.tnt721.properties.selling_info.itemId, req);
-            if (!tnt721) {
-                return;
-            }
-            return this._indexTNT721(tnt721, nftCollection);
-        })
-        // if nft is not valid, do not show
-
-    }
-
     get facets() {
         return {types: facets, priceRanges: priceRanges, categories: categories}
     }

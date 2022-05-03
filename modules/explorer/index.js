@@ -351,17 +351,12 @@ const explorer = function (server, options, next) {
             const contract_addr = req.params.contract_addr;
             const token_id = req.params.token_id;
 
-            const selling_nft = await marketplaceContract.getByNftContractTokenId(contract_addr, token_id);
-            let selling_id;
-            if (selling_nft.itemId.toString() !== "0") {
-                selling_id = selling_nft.itemId.toString()
-            }
-
             if (!contract_addr) {
                 throw "No contract address Found";
             }
             try {
-                return get_nft_info_721(contract_addr, token_id, selling_id, req);
+                let nft = await nftCollection.getOrCreate(contract_addr, token_id);
+                return nft.tnt721;
             } catch (error) {
                 console.log(error);
                 return Boom.badRequest(error);
