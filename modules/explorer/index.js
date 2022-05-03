@@ -355,7 +355,8 @@ const explorer = function (server, options, next) {
                 throw "No contract address Found";
             }
             try {
-                let nft = await nftCollection.getOrCreate(contract_addr, token_id);
+                const nftCollection = server.hmongoose.connection.models.nft;
+                const nft = await nftCollection.getOrCreate(contract_addr, token_id);
                 return nft.tnt721;
             } catch (error) {
                 console.log(error);
