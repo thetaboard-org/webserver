@@ -138,7 +138,7 @@ buildPayload = function (transaction, prices, currency, wallet_addresses) {
 };
 
 getTransactionHistories = async function (req, wallet_addresses, start_date_tx, end_date_tx) {
-    const transactions_collection = req.mongo.db.collection('transaction')
+    const transactions_collection = server.hmongoose.connection.models.transaction;
     const match = {
         "$and": [
             {

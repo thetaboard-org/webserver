@@ -112,6 +112,7 @@ module.exports = function (sequelize, DataTypes) {
                 "artist": null,
                 "drop": null,
                 "assets": null,
+                "offers": null
             },
             "attributes": null,
             "token_id": null

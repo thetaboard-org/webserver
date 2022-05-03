@@ -37,7 +37,7 @@ const transactionHistory = function (server, options, next) {
                 const offset = (pageNumber - 1) * limitNumber;
                 const walletAddresses = typeof req.query["wallets[]"] == 'string' ? [req.query["wallets[]"].toLowerCase()] : req.query["wallets[]"].map((x) => x.toLowerCase());
 
-                const transactions_collection = req.mongo.db.collection('transaction')
+                const transactions_collection = server.hmongoose.connection.models.transaction;
                 const match = {
                     "$or": [...walletAddresses.map((wallet) => {
                         return {"from_address": wallet}
@@ -48,7 +48,7 @@ const transactionHistory = function (server, options, next) {
                     ]
                 }
                 const [totalTx, transaction_list] = await Promise.all([transactions_collection.count(match),
-                    transactions_collection.find(match).sort({timestamp: -1}).skip(offset).limit(limitNumber).toArray()]);
+                    transactions_collection.find(match).sort({timestamp: -1}).skip(offset).limit(limitNumber)]);
                 const pagination = {
                     currentPageNumber: pageNumber,
                     totalPageNumber: Math.ceil(totalTx / limitNumber)

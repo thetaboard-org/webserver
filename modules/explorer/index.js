@@ -3,9 +3,7 @@ const dateFormat = require("dateformat");
 const Sequelize = require('sequelize');
 const Boom = require("@hapi/boom");
 const Op = Sequelize.Op;
-const thetajs = require("@thetalabs/theta-js");
-const URL = require("url").URL;
-const IMG_EXTENSIONS = ["ase", "art", "bmp", "blp", "cd5", "cit", "cpt", "cr2", "cut", "dds", "dib", "djvu", "egt", "exif", "gif", "gpl", "grf", "icns", "ico", "iff", "jng", "jpeg", "jpg", "jfif", "jp2", "jps", "lbm", "max", "miff", "mng", "msp", "nitf", "ota", "pbm", "pc1", "pc2", "pc3", "pcf", "pcx", "pdn", "pgm", "PI1", "PI2", "PI3", "pict", "pct", "pnm", "pns", "ppm", "psb", "psd", "pdd", "psp", "px", "pxm", "pxr", "qfx", "raw", "rle", "sct", "sgi", "rgb", "int", "bw", "tga", "tiff", "tif", "vtf", "xbm", "xcf", "xpm", "3dv", "amf", "ai", "awg", "cgm", "cdr", "cmx", "dxf", "e2d", "egt", "eps", "fs", "gbr", "odg", "svg", "stl", "vrml", "x3d", "sxd", "v2d", "vnd", "wmf", "emf", "art", "xar", "png", "webp", "jxr", "hdp", "wdp", "cur", "ecw", "iff", "lbm", "liff", "nrrd", "pam", "pcx", "pgf", "sgi", "rgb", "rgba", "bw", "int", "inta", "sid", "ras", "sun", "tga"];
+const {ethers} = require("ethers");
 
 
 // get ABIs and contract addresses
@@ -13,6 +11,8 @@ const nft_abi = require("../../abi/nft_abi.json")
 const tnt20_abi = require("../../abi/tnt20_abi.json");
 const marketplace_abi = require("../../abi/marketplace_abi.json");
 const marketplace_addr = "0x533c8425897b3E10789C1d6F576b96Cb55E6F47d";
+const provider = new ethers.providers.JsonRpcProvider("http://142.44.213.241:18888/rpc");
+const marketplaceContract = new ethers.Contract(marketplace_addr, marketplace_abi, provider);
 
 
 global.fetch = require("node-fetch");
@@ -312,44 +312,34 @@ const explorer = function (server, options, next) {
             const NFTs721 = [];
 
             // get currently sold NFT
-            const marketplaceCollection = req.mongo.db.collection('marketplace');
-            const conditionSell = {"properties.selling_info.seller": wallet_adr.toLowerCase()};
+            const nftCollection = server.hmongoose.connection.models.nft;
+            const condition = {
+                "$or": [
+                    {"owner": wallet_adr.toLowerCase()},
+                    {"tnt721.properties.selling_info.seller": wallet_adr.toLowerCase()}
+                ]
+            }
             if (filterForContract) {
-                conditionSell.contract_addr = filterForContract
+                condition.contract_addr = filterForContract
             }
-            const sellingItems721 = await marketplaceCollection.find(conditionSell)
-                .skip((pageNumber - 1) * showPerPage).limit(showPerPage).toArray();
-            NFTs721.push(...sellingItems721);
-            const sellingItemsCount = await marketplaceCollection.count(conditionSell);
+            const [Items721, itemsCount] = await Promise.all([
+                nftCollection.find(condition).sort({blockNumber: -1}).skip((pageNumber - 1) * showPerPage).limit(showPerPage),
+                nftCollection.count(condition)]);
 
-            // get NFTs
-            const nftCollection = req.mongo.db.collection('nft');
-            const conditionWallet = {"owner": wallet_adr.toLowerCase()};
-            if (filterForContract) {
-                conditionWallet.contract = filterForContract
-            }
-            if (sellingItems721.length < showPerPage) {
-                const to_skip = Math.max(0, ((pageNumber - 1) * showPerPage) - sellingItemsCount);
-                const limit = 12 - sellingItems721.length;
-                const walletNFTs = await nftCollection.find(conditionWallet).sort({blockNumber: -1})
-                    .skip(to_skip).limit(limit).toArray();
-                const walletsNFTs721 = await Promise.all(walletNFTs.map(async (nft) => {
-                    if (nft.tnt721) {
-                        return nft.tnt721;
-                    } else {
-                        const tnt721 = await get_nft_info_721(nft['contract'], nft['tokenId'], null, req);
-                        nftCollection.updateOne({_id: nft._id}, {$set: {tnt721: tnt721}});
-                        return tnt721;
 
-                    }
-                }));
-                NFTs721.push(...walletsNFTs721);
-            }
-            const walletCount = await nftCollection.count(conditionWallet);
+            const walletsNFTs721 = await Promise.all(Items721.map(async (nft) => {
+                if (nft.tnt721.name) {
+                    return nft.tnt721;
+                } else {
+                    nft = await nftCollection.getOrCreate(nft['contract'], nft['tokenId']);
+                    return nft.tnt721;
+                }
+            }));
+
 
             return {
-                totalCount: walletCount + sellingItemsCount,
-                NFTs: NFTs721
+                totalCount: itemsCount,
+                NFTs: walletsNFTs721
             };
         }
     });
@@ -361,8 +351,6 @@ const explorer = function (server, options, next) {
             const contract_addr = req.params.contract_addr;
             const token_id = req.params.token_id;
 
-            const provider = new thetajs.providers.HttpProvider(thetajs.networks.ChainIds.Mainnet);
-            const marketplaceContract = new thetajs.Contract(marketplace_addr, marketplace_abi, provider);
             const selling_nft = await marketplaceContract.getByNftContractTokenId(contract_addr, token_id);
             let selling_id;
             if (selling_nft.itemId.toString() !== "0") {
@@ -405,8 +393,7 @@ const getWalletInfo = async function (wallet_adr, req) {
     });
 
     // get tdrop info
-    const provider = new thetajs.providers.HttpProvider(thetajs.networks.ChainIds.Mainnet);
-    const contract_tdrop = new thetajs.Contract("0x1336739b05c7ab8a526d40dcc0d04a826b5f8b03", tnt20_abi, provider);
+    const contract_tdrop = new ethers.Contract("0x1336739b05c7ab8a526d40dcc0d04a826b5f8b03", tnt20_abi, provider);
 
     const balance = await contract_tdrop.balanceOf(wallet_adr);
     response.push({
@@ -418,7 +405,7 @@ const getWalletInfo = async function (wallet_adr, req) {
     });
 
     // get tdrop stacked
-    const contract_tdrop_stacked = new thetajs.Contract("0xA89c744Db76266ecA60e2b0F62Afcd1f8581b7ed", tnt20_abi, provider);
+    const contract_tdrop_stacked = new ethers.Contract("0xA89c744Db76266ecA60e2b0F62Afcd1f8581b7ed", tnt20_abi, provider);
     const balance_stacked = await contract_tdrop_stacked.estimatedTDropOwnedBy(wallet_adr);
     if (balance_stacked.toString() !== "0") {
         response.push({
@@ -453,182 +440,9 @@ const getWalletInfo = async function (wallet_adr, req) {
     return response
 }
 
-const get_tns_info_721 = async (contract_addr, token_id, req) => {
-
-    const NFT = await req.getModel('NFT').findOne({
-        where: {nftContractId: contract_addr},
-        include: ['Artist']
-    });
-    let artist;
-    if (NFT) {
-        artist = NFT ? NFT.Artist.toJSON().attributes : null;
-        artist["id"] = NFT.Artist.id;
-    }
-
-    const TNT721 = {
-        "contract_addr": contract_addr.toLowerCase(),
-        "original_token_id": token_id,
-        "image": "/assets/nft/tns_placeholder.png",
-        "name": null,
-        "description": "TNS, Theta name service domain",
-        "properties": {
-            "artist": artist,
-            "drop": null,
-            "assets": [],
-            "selling_info": null,
-        },
-        "attributes": null,
-        "token_id": null,
-    }
-    try {
-        const tnsTokenId = await req.getModel('TnsTokenId').findOne({where: {'tokenId': token_id}});
-        TNT721.name = tnsTokenId ? `${tnsTokenId.name}.theta` : token_id;
-        return TNT721;
-    } catch (e) {
-        console.log("Could not fetch TNS");
-        console.error(e);
-        return null;
-    }
-}
-
-const get_info_721 = async (contract_addr, token_id, provider, req) => {
-    const contract = new thetajs.Contract(contract_addr, nft_abi, provider);
-    let token_uri = await contract.tokenURI(token_id);
-    const parsed = new URL(token_uri);
-    if (token_uri.includes('thetaboard') && process.env.NODE_ENV === 'development') {
-        token_uri = token_uri.replace('https://nft.thetaboard.io', 'http://localhost:8000')
-    }
-    const TNT721 = {
-        "contract_addr": contract_addr.toLowerCase(),
-        "original_token_id": token_id,
-        "image": null,
-        "name": null,
-        "description": null,
-        "properties": {
-            "artist": null,
-            "drop": null,
-            "assets": [],
-            "selling_info": null,
-        },
-        "attributes": null,
-        "token_id": null
-    };
-
-    // if it is an image, then we don't have anything else to fetch
-    const extension = parsed.pathname.split('.').pop();
-    if (IMG_EXTENSIONS.includes(extension)) {
-        TNT721['image'] = token_uri;
-        TNT721['name'] = `${await contract.name()}`;
-    } else {
-        try {
-            if (parsed.protocol === 'ipfs:') {
-                token_uri = `https://ipfs.io/${token_uri.replace(':/', '')}`
-            }
-            const nft_metadata_api = await fetch(token_uri);
-            const nft_metadata = await nft_metadata_api.json();
-
-            const image_parsed = new URL(nft_metadata['image']);
-            if (image_parsed.protocol === 'ipfs:') {
-                nft_metadata['image'] = `https://ipfs.io/${nft_metadata['image'].replace(':/', '')}`
-            }
-            TNT721['image'] = nft_metadata['image'];
-            if (nft_metadata.token_id && !nft_metadata['name'].includes("#")) {
-                TNT721['name'] = `${nft_metadata['name']} #${nft_metadata.token_id}`;
-            } else {
-                TNT721['name'] = nft_metadata['name'];
-            }
-            TNT721.description = nft_metadata.description;
-            if (nft_metadata.properties) {
-                TNT721.properties.artist = nft_metadata.properties.artist;
-                TNT721.properties.drop = nft_metadata.properties.drop;
-                TNT721.properties.assets = nft_metadata.properties.assets;
-            }
-            // if we didn't got the artist info form the web, we try to get it from our DB
-            if (!TNT721.properties.artist) {
-                const NFT = await req.getModel('NFT').findOne({
-                    where: {nftContractId: contract_addr},
-                    include: ['Artist']
-                });
-                if (NFT) {
-                    const artist = NFT ? NFT.Artist.toJSON().attributes : null;
-                    artist["id"] = NFT.Artist.id;
-                    TNT721.properties.artist = artist;
-                }
-            }
-
-            if (nft_metadata.attributes) {
-                TNT721.attributes = nft_metadata.attributes;
-            }
-            // handle thetadrop unique features....
-            if (nft_metadata.animation_url) {
-                TNT721.properties.assets = TNT721.properties.assets || [];
-                TNT721.properties.assets.push({
-                    description: null,
-                    name: null,
-                    type: 'video',
-                    asset: nft_metadata.animation_url
-                });
-            }
-            if (nft_metadata.token_id) {
-                TNT721.token_id = nft_metadata.token_id
-            } else if (nft_metadata['name'].includes("#")) {
-                try {
-                    const number = nft_metadata['name'].split('#');
-                    TNT721.token_id = Number(number[1]);
-                } catch (e) {
-                    //    couldn't get token id
-                }
-            }
-        } catch (e) {
-            console.log("Could not fetch NFT");
-            console.error(e);
-            // URL is invalid. Nothing we can do about it...
-            return null;
-        }
-    }
-    return TNT721;
-}
-
-const getSellingInfo = async (selling_id, provider) => {
-    // add selling info if there is any
-    const marketplaceContract = new thetajs.Contract(marketplace_addr, marketplace_abi, provider);
-    const selling_info = await marketplaceContract.getByMarketId(selling_id);
-    return {
-        "itemId": Number(selling_info.itemId.toString()),
-        "nftContract": selling_info.nftContract.toLowerCase(),
-        "tokenId": selling_info.tokenId.toString(),
-        "seller": selling_info.seller.toString().toLowerCase(),
-        "buyer": selling_info.buyer,
-        "category": selling_info.category,
-        "price": selling_info.price.toString()
-    };
-}
-
-const get_nft_info_721 = async (contract_addr, token_id, selling_id, req) => {
-    const provider = new thetajs.providers.HttpProvider(thetajs.networks.ChainIds.Mainnet);
-    let TNT721;
-    try {
-        // special handling for TNS
-        if (contract_addr.toLowerCase() === '0xbb4d339a7517c81c32a01221ba51cbd5d3461a94') {
-            TNT721 = await get_tns_info_721(contract_addr, token_id, req);
-        } else {
-            TNT721 = await get_info_721(contract_addr, token_id, provider, req);
-        }
-        if (selling_id) {
-            TNT721.properties.selling_info = await getSellingInfo(selling_id, provider);
-        }
-        return TNT721;
-    } catch (e) {
-        console.error("Could not get NFT");
-        console.error(e);
-        return null;
-    }
-}
-
 // the get_nft_info_721 is a hack to share function. Should find out how to do that properly...
 module.exports = {
     register: explorer,
     name: 'explorer',
     version: '1.0.0',
-    get_nft_info_721: get_nft_info_721
 };
