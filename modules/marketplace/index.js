@@ -1,5 +1,4 @@
 const Boom = require('@hapi/boom')
-const {marketplace} = require('../../services')
 
 const marketplaceRoute = async function (server, options, next) {
     server.route([
@@ -10,6 +9,7 @@ const marketplaceRoute = async function (server, options, next) {
                 handler: async function (req, h) {
                     const artists = await req.getModel('Artist').findAll();
                     const drops = await req.getModel('Drop').findAll({where: {isPublic: true}});
+                    const marketplace = server.app.marketplace;
                     return {
                         priceRanges: marketplace.facets.priceRanges.map((x) => x.join('|')),
                         categories: marketplace.facets.categories,
@@ -28,7 +28,7 @@ const marketplaceRoute = async function (server, options, next) {
                     const showPerPage = 20;
                     const sortBy = req.query.sortBy ? req.query.sortBy : ""; // only work for price for now
                     const orderBy = req.query.orderBy ? req.query.orderBy : "";
-                    const nftCollection = req.mongo.db.collection('nft');
+                    const nftCollection = server.hmongoose.connection.models.nft;
                     const cursor = nftCollection.find({
                         "tnt721.properties.selling_info.itemId": {
                             $exists: true,
@@ -41,20 +41,20 @@ const marketplaceRoute = async function (server, options, next) {
                         cursor.sort(sort).collation({locale: "en_US", numericOrdering: true});
                     } else {
                         const sort = {"tnt721.properties.selling_info.itemId": -1}
-                        cursor.sort(sort).collation({locale: "en_US", numericOrdering: true});
+                        cursor.sort(sort);
                     }
 
                     try {
-                        const count = await marketplaceCollection.count({
+                        const count = await nftCollection.count({
                             "tnt721.properties.selling_info.itemId": {
                                 $exists: true,
                                 $ne: null
                             }
                         });
-                        const sellingNFTs = await cursor.skip((pageNumber - 1) * showPerPage).limit(showPerPage).toArray();
+                        const sellingNFTs = await cursor.skip((pageNumber - 1) * showPerPage).limit(showPerPage);
                         return {
                             totalCount: count,
-                            sellingNFTs: sellingNFTs
+                            sellingNFTs: sellingNFTs.map((x) => x.tnt721)
                         }
                     } catch (e) {
                         if (e && e.errors) {
@@ -76,7 +76,8 @@ const marketplaceRoute = async function (server, options, next) {
                     const orderBy = req.query.orderBy ? req.query.orderBy : "";
                     const showPerPage = 20;
 
-                    const nftCollection = req.mongo.db.collection('nft');
+                    const marketplace = server.app.marketplace;
+                    const nftCollection = server.hmongoose.connection.models.nft;
 
                     const filter = {}
 
@@ -86,7 +87,7 @@ const marketplaceRoute = async function (server, options, next) {
                                 filter['$and'] = [];
                             }
                             const or = req.query[facet].split(',').map((x) => {
-                                return {"tnt721.tags": `${facet}:${x}`}
+                                return {"tnt721.properties.selling_info.tags": `${facet}:${x}`}
                             })
                             filter["$and"].push({"$or": or})
                         }
@@ -108,10 +109,10 @@ const marketplaceRoute = async function (server, options, next) {
 
                     try {
                         const count = await nftCollection.count(filter);
-                        const sellingNFTs = await cursor.skip((pageNumber - 1) * showPerPage).limit(showPerPage).toArray();
+                        const sellingNFTs = await cursor.skip((pageNumber - 1) * showPerPage).limit(showPerPage);
                         return {
                             totalCount: count,
-                            sellingNFTs: sellingNFTs
+                            sellingNFTs: sellingNFTs.map((x) => x.tnt721)
                         }
                     } catch (e) {
                         if (e && e.errors) {
@@ -127,11 +128,16 @@ const marketplaceRoute = async function (server, options, next) {
             method: 'GET',
             options: {
                 handler: async function (req, h) {
-                    const marketplaceCollection = req.mongo.db.collection('nft');
-                    const cursor = marketplaceCollection.find();
-                    const sort = {"properties.selling_info.itemId": -1}
-                    cursor.sort(sort).collation({locale: "en_US", numericOrdering: true});
-                    return cursor.toArray()
+                    const nftCollection = server.hmongoose.connection.models.nft;
+                    const cursor = nftCollection.find({
+                        "tnt721.properties.selling_info.itemId": {
+                            $exists: true,
+                            $ne: null
+                        }
+                    });
+
+                    const newly = await cursor.sort({"properties.selling_info.itemId": -1});
+                    return newly.map((x) => x.tnt721);
                 }
             }
         }

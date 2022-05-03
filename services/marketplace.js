@@ -27,8 +27,8 @@ class Marketplace {
 
         const sellingItems = await marketplaceContract.fetchSellingItems();
 
-        marketplaceContract.on("MarketItemCreated", this._eventHandler);
-        marketplaceContract.on("MarketItemSale", this._eventHandler);
+        marketplaceContract.on("MarketItemCreated", this._eventHandler.bind(this));
+        marketplaceContract.on("MarketItemSale", this._eventHandler.bind(this));
 
         const item_ids = sellingItems.map((x) => Number(x.itemId));
 

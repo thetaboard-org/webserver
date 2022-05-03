@@ -71,6 +71,15 @@ const artist = function (server, options, next) {
                             artist[attr] = attributes[attr];
                         }
                         await artist.save()
+
+                        // update NFT collection cache
+                        const nftCollection = server.hmongoose.connection.models.nft;
+                        for (const NFT of await artist.getNFTs()) {
+                            if (NFT.nftContractId) {
+                                nftCollection.updateForContract(NFT.nftContractId);
+                            }
+                        }
+
                         let response = {"data": {}};
                         response.data = artist.toJSON();
                         return response;
@@ -103,6 +112,15 @@ const artist = function (server, options, next) {
                         }
                         const artist = req.getModel('Artist').build(req.payload.data.attributes);
                         await artist.save()
+
+                        // update NFT collection cache
+                        const nftCollection = server.hmongoose.connection.models.nft;
+                        for (const NFT of await artist.getNFTs()) {
+                            if (NFT.nftContractId) {
+                                nftCollection.updateForContract(NFT.nftContractId);
+                            }
+                        }
+
                         return {"data": artist.toJSON()};
                     } catch (e) {
                         if (e && e.errors) {

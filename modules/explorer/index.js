@@ -312,43 +312,34 @@ const explorer = function (server, options, next) {
             const NFTs721 = [];
 
             // get currently sold NFT
-            const nftCollection = req.mongo.db.collection('nft');
-            const conditionSell = {"tnt721.properties.selling_info.seller": wallet_adr.toLowerCase()};
+            const nftCollection = server.hmongoose.connection.models.nft;
+            const condition = {
+                "$or": [
+                    {"owner": wallet_adr.toLowerCase()},
+                    {"tnt721.properties.selling_info.seller": wallet_adr.toLowerCase()}
+                ]
+            }
             if (filterForContract) {
-                conditionSell.contract_addr = filterForContract
+                condition.contract_addr = filterForContract
             }
-            const sellingItems721 = await nftCollection.find(conditionSell)
-                .skip((pageNumber - 1) * showPerPage).limit(showPerPage).toArray();
-            NFTs721.push(...sellingItems721);
-            const sellingItemsCount = await nftCollection.count(conditionSell);
+            const [Items721, itemsCount] = await Promise.all([
+                nftCollection.find(condition).sort({blockNumber: -1}).skip((pageNumber - 1) * showPerPage).limit(showPerPage),
+                nftCollection.count(condition)]);
 
-            // get NFTs
-            const conditionWallet = {"owner": wallet_adr.toLowerCase()};
-            if (filterForContract) {
-                conditionWallet.contract = filterForContract
-            }
-            if (sellingItems721.length < showPerPage) {
-                const to_skip = Math.max(0, ((pageNumber - 1) * showPerPage) - sellingItemsCount);
-                const limit = 12 - sellingItems721.length;
-                const walletNFTs = await nftCollection.find(conditionWallet).sort({blockNumber: -1})
-                    .skip(to_skip).limit(limit).toArray();
-                const walletsNFTs721 = await Promise.all(walletNFTs.map(async (nft) => {
-                    if (nft.tnt721) {
-                        return nft.tnt721;
-                    } else {
-                        const tnt721 = await get_nft_info_721(nft['contract'], nft['tokenId'], null, req);
-                        nftCollection.updateOne({_id: nft._id}, {$set: {tnt721: tnt721}});
-                        return tnt721;
 
-                    }
-                }));
-                NFTs721.push(...walletsNFTs721);
-            }
-            const walletCount = await nftCollection.count(conditionWallet);
+            const walletsNFTs721 = await Promise.all(Items721.map(async (nft) => {
+                if (nft.tnt721.name) {
+                    return nft.tnt721;
+                } else {
+                    nft = await nftCollection.getOrCreate(nft['contract'], nft['tokenId']);
+                    return nft.tnt721;
+                }
+            }));
+
 
             return {
-                totalCount: walletCount + sellingItemsCount,
-                NFTs: NFTs721
+                totalCount: itemsCount,
+                NFTs: walletsNFTs721
             };
         }
     });
@@ -447,20 +438,6 @@ const getWalletInfo = async function (wallet_adr, req) {
         return result;
     }));
     return response
-}
-
-const getSellingInfo = async (selling_id, provider) => {
-    // add selling info if there is any
-    const selling_info = await marketplaceContract.getByMarketId(selling_id);
-    return {
-        "itemId": Number(selling_info.itemId.toString()),
-        "nftContract": selling_info.nftContract.toLowerCase(),
-        "tokenId": selling_info.tokenId.toString(),
-        "seller": selling_info.seller.toString().toLowerCase(),
-        "buyer": selling_info.buyer,
-        "category": selling_info.category,
-        "price": selling_info.price.toString()
-    };
 }
 
 // the get_nft_info_721 is a hack to share function. Should find out how to do that properly...

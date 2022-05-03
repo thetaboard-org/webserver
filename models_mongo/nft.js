@@ -99,6 +99,15 @@ class NFT {
                 return null;
             }
         }
+
+        this.schema.statics.updateForContract = async (contract) => {
+            const model = this.server.hmongoose.connection.models.nft;
+            const NFTs = await model.find({contract: contract});
+            for (const nft of NFTs) {
+                // await is used to prevent crashing things with to many calls
+                await model.getOrCreate(contract, nft.tokenId, false);
+            }
+        }
     }
 
 }

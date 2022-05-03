@@ -49,7 +49,7 @@ const drop = function (server, options, next) {
                         if (sortBy) {
                             options.order = [[sortBy, "ASC"]]
                         }
-                        if(req.query.artistId){
+                        if (req.query.artistId) {
                             options.where.artistId = req.query.artistId;
                         }
                         const drops = await req.getModel('Drop').findAll(options);
@@ -150,6 +150,15 @@ const drop = function (server, options, next) {
                                 data: {"type": "artist", "id": req.payload.data.relationships.artist.data.id}
                             }
                         }
+
+                        // update NFT collection cache
+                        const nftCollection = server.hmongoose.connection.models.nft;
+                        for (const NFT of await drop.getNFTs()) {
+                            if (NFT.nftContractId) {
+                                nftCollection.updateForContract(NFT.nftContractId);
+                            }
+                        }
+
                         return {"data": dropJSON};
                     } catch (e) {
                         if (e && e.errors) {
@@ -183,6 +192,15 @@ const drop = function (server, options, next) {
                         const drop = req.getModel('Drop').build(req.payload.data.attributes);
                         drop.artistId = req.payload.data.relationships.artist.data.id;
                         await drop.save()
+
+                        // update NFT collection cache
+                        const nftCollection = server.hmongoose.connection.models.nft;
+                        for (const NFT of await drop.getNFTs()) {
+                            if (NFT.nftContractId) {
+                                nftCollection.updateForContract(NFT.nftContractId);
+                            }
+                        }
+
                         return {"data": drop.toJSON()};
                     } catch (e) {
                         if (e && e.errors) {
