@@ -1,5 +1,4 @@
 const Boom = require('@hapi/boom');
-const marketplace = require('../../services/marketplace')
 
 
 const nft = function (server, options, next) {
