@@ -1,6 +1,5 @@
 const {ethers} = require("ethers");
 
-const explorer = require('../modules/explorer');
 
 // init contract
 const marketplace_abi = require("../abi/marketplace_abi.json");

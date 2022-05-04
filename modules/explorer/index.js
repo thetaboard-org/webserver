@@ -7,12 +7,8 @@ const {ethers} = require("ethers");
 
 
 // get ABIs and contract addresses
-const nft_abi = require("../../abi/nft_abi.json")
 const tnt20_abi = require("../../abi/tnt20_abi.json");
-const marketplace_abi = require("../../abi/marketplace_abi.json");
-const marketplace_addr = "0x533c8425897b3E10789C1d6F576b96Cb55E6F47d";
 const provider = new ethers.providers.JsonRpcProvider("http://142.44.213.241:18888/rpc");
-const marketplaceContract = new ethers.Contract(marketplace_addr, marketplace_abi, provider);
 
 
 global.fetch = require("node-fetch");
@@ -320,7 +316,7 @@ const explorer = function (server, options, next) {
                 ]
             }
             if (filterForContract) {
-                condition.contract_addr = filterForContract
+                condition.contract = filterForContract
             }
             const [Items721, itemsCount] = await Promise.all([
                 nftCollection.find(condition).sort({blockNumber: -1}).skip((pageNumber - 1) * showPerPage).limit(showPerPage),
@@ -356,6 +352,7 @@ const explorer = function (server, options, next) {
             }
             try {
                 const nftCollection = server.hmongoose.connection.models.nft;
+
                 const nft = await nftCollection.getOrCreate(contract_addr, token_id);
                 return nft.tnt721;
             } catch (error) {
