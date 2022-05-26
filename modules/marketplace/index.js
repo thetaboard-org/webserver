@@ -1,4 +1,5 @@
-const Boom = require('@hapi/boom')
+const Boom = require('@hapi/boom');
+const {ethers} = require("ethers");
 
 const marketplaceRoute = async function (server, options, next) {
     server.route([
@@ -54,7 +55,7 @@ const marketplaceRoute = async function (server, options, next) {
                         const sellingNFTs = await cursor.skip((pageNumber - 1) * showPerPage).limit(showPerPage);
                         return {
                             totalCount: count,
-                            sellingNFTs: sellingNFTs.map((x) => x.tnt721)
+                            sellingNFTs: sellingNFTs.map((x) => x.toJSON().tnt721)
                         }
                     } catch (e) {
                         if (e && e.errors) {
@@ -76,22 +77,46 @@ const marketplaceRoute = async function (server, options, next) {
                     const orderBy = req.query.orderBy ? req.query.orderBy : "";
                     const showPerPage = 20;
 
-                    const marketplace = server.app.marketplace;
                     const nftCollection = server.hmongoose.connection.models.nft;
 
-                    const filter = {}
-
-                    marketplace.facets.types.forEach((facet) => {
-                        if (req.query[facet]) {
-                            if (!filter['$and']) {
-                                filter['$and'] = [];
+                    const filter = {
+                        "$and": [{
+                            "tnt721.properties.selling_info.itemId": {
+                                $exists: true,
+                                $ne: null
                             }
+                        }]
+                    };
+
+                    ['artist', 'drop'].forEach((facet) => {
+                        if (req.query[facet]) {
                             const or = req.query[facet].split(',').map((x) => {
-                                return {"tnt721.properties.selling_info.tags": `${facet}:${x}`}
+                                const filter = {};
+                                filter[`tnt721.properties.${facet}.id`] = Number(x);
+                                return filter
                             })
                             filter["$and"].push({"$or": or})
                         }
-                    })
+                    });
+                    if (req.query.priceRange) {
+                        const or = req.query.priceRange.split(',').map((x) => {
+                            const [min, max] = x.split('|');
+                            let maxParsed, minParsed = ethers.utils.parseEther(min);
+                            if (max === 'infinity') {
+                                 maxParsed = ethers.utils.parseEther(String(Number.MAX_SAFE_INTEGER));
+                            } else {
+                                maxParsed = ethers.utils.parseEther(max);
+                            }
+                            return {
+                                "tnt721.properties.selling_info.price": {
+                                    "$lte": maxParsed.toString(),
+                                    "$gte": minParsed.toString()
+                                }
+                            }
+                        })
+                        filter["$and"].push({"$or": or})
+                    }
+
                     if (search) {
                         filter['$text'] = {"$search": search};
                     }
@@ -112,7 +137,7 @@ const marketplaceRoute = async function (server, options, next) {
                         const sellingNFTs = await cursor.skip((pageNumber - 1) * showPerPage).limit(showPerPage);
                         return {
                             totalCount: count,
-                            sellingNFTs: sellingNFTs.map((x) => x.tnt721)
+                            sellingNFTs: sellingNFTs.map((x) => x.toJSON().tnt721)
                         }
                     } catch (e) {
                         if (e && e.errors) {
@@ -136,8 +161,8 @@ const marketplaceRoute = async function (server, options, next) {
                         }
                     });
 
-                    const newly = await cursor.sort({"properties.selling_info.itemId": -1});
-                    return newly.map((x) => x.tnt721);
+                    const newly = await cursor.sort({"properties.selling_info.itemId": -1}).limit(1);
+                    return newly.map((x) => x.toJSON().tnt721);
                 }
             }
         }

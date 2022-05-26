@@ -1,6 +1,5 @@
 const {ethers} = require("ethers");
 
-
 // init contract
 const marketplace_abi = require("../abi/marketplace_abi.json");
 const marketplace_addr = "0x533c8425897b3E10789C1d6F576b96Cb55E6F47d";
@@ -23,6 +22,7 @@ class Marketplace {
     async initStructure() {
         const server = this.server;
         const nftCollection = server.hmongoose.connection.models.nft;
+        // await nftCollection.updateMany({}, { $unset : { tnt721 : 1} })
 
         const sellingItems = await marketplaceContract.fetchSellingItems();
 
@@ -93,40 +93,9 @@ class Marketplace {
     }
 
     async _indexTNT721(nft, itemId, seller, price, category) {
-        // add tags and indexes
-        const tags = [];
-
-        const priceTfuel = ethers.utils.formatEther(price);
-        if (priceTfuel <= priceRanges[0][1]) {
-            tags.push(`priceRange:${priceRanges[0].join('|')}`);
-        } else if (priceTfuel <= priceRanges[1][1]) {
-            tags.push(`priceRange:${priceRanges[1].join('|')}`);
-        } else if (priceTfuel <= priceRanges[2][1]) {
-            tags.push(`priceRange:${priceRanges[2].join('|')}`);
-        } else if (priceTfuel <= priceRanges[3][1]) {
-            tags.push(`priceRange:${priceRanges[3].join('|')}`);
-        } else {
-            tags.push(`priceRange:${priceRanges[4].join('|')}`);
-        }
-
-        ['artist', 'drop'].forEach((facetName) => {
-            if (nft.tnt721.properties[facetName]) {
-                const id = nft.tnt721.properties[facetName].id
-                tags.push(`${facetName}:${id}`);
-            }
-        });
-
-        if (nft.contract === '0xbb4d339a7517c81c32a01221ba51cbd5d3461a94') {
-            tags.push(`category:0`);
-        } else {
-            tags.push(`category:1`);
-        }
-
-
         nft.tnt721.properties.selling_info = {
             "itemId": itemId,
             "seller": seller,
-            "tags": tags,
             "category": category,
             "price": price
         }
@@ -135,6 +104,21 @@ class Marketplace {
 
     get facets() {
         return {types: facets, priceRanges: priceRanges, categories: categories}
+    }
+
+    async getNFTSellInfo(contract, tokenId) {
+        const sellInfo = await marketplaceContract.getByNftContractTokenId(contract, tokenId);
+        if (sellInfo.itemId.toNumber() !== 0 && !sellInfo.isSold) {
+            return {
+                "itemId": sellInfo.itemId.toNumber(),
+                "seller": sellInfo.seller.toLowerCase(),
+                "category": sellInfo.category,
+                "price": sellInfo.price.toString()
+            }
+        } else {
+            return null;
+        }
+
     }
 
 }

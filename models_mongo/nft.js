@@ -1,7 +1,6 @@
 const mongoose = require('mongoose');
 const {Schema} = mongoose;
 
-
 class NFT {
     server;
     _schema;
@@ -10,11 +9,25 @@ class NFT {
         this.server = server;
         this._index();
         this._statics();
+        this._virtual();
         return this._schema;
     }
 
     get schema() {
         if (!this._schema) {
+            const Offers = new Schema(
+                {
+                    "itemId": {type: Number, index: true},
+                    "offerer": {type: String, lowercase: true},
+                    "price": {
+                        type: mongoose.Decimal128,
+                        get: (field) => {
+                            return field.toString()
+                        }
+                    },
+                },
+                {toJSON: {getters: true}}
+            )
             this._schema = new Schema({
                 "_id": String,
                 "contract": {type: String, lowercase: true, index: true},
@@ -36,18 +49,18 @@ class NFT {
                             "itemId": {type: Number, index: true},
                             "seller": {type: String, lowercase: true, index: true},
                             "category": String,
-                            "price": String,
-                            "tags": {type: [String], index: true},
+                            "price": {
+                                type: mongoose.Decimal128,
+                                get: (field) => {
+                                    return field.toString()
+                                }
+                            },
                         },
-                        "offers": [{
-                            "itemId": {type: Number, index: true},
-                            "offerer": {type: String, lowercase: true},
-                            "price": Number,
-                        }]
+                        "offers": [Offers]
                     },
                     "attributes": {}, // free schema coming from contract
                 }
-            }, {collection: 'nft'});
+            }, {collection: 'nft', toJSON: {virtuals: true, getters: true}});
         }
         return this._schema;
     }
@@ -75,7 +88,7 @@ class NFT {
     }
 
     _statics() {
-        this.schema.statics.getOrCreate = async (contract, tokenId, useCache = true) => {
+        this.schema.statics.getOrCreate = async (contract, tokenId, useCache = false) => {
             const model = this.server.hmongoose.connection.models.nft;
 
             let nft = await model.findOne({contract: contract, tokenId: tokenId});
@@ -87,11 +100,8 @@ class NFT {
 
             try {
                 // special handling for TNS
-                if (contract.toLowerCase() === '0xbb4d339a7517c81c32a01221ba51cbd5d3461a94') {
-                    nft.tnt721 = await this.server.app.tnt721.get_tns_info(contract, tokenId);
-                } else {
-                    nft.tnt721 = await this.server.app.tnt721.get_info(contract, tokenId);
-                }
+                const isTNS = contract.toLowerCase() === '0xbb4d339a7517c81c32a01221ba51cbd5d3461a94';
+                nft.tnt721 = await this.server.app.tnt721.get_info(contract, tokenId, isTNS);
                 return await nft.save();
             } catch (e) {
                 console.error("Could not get NFT");
@@ -110,6 +120,11 @@ class NFT {
         }
     }
 
+    _virtual() {
+        this.schema.virtual('tnt721.owner').get(function () {
+            return this.owner;
+        });
+    }
 }
 
 

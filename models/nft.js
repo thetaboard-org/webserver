@@ -141,9 +141,6 @@ module.exports = function (sequelize, DataTypes) {
         } else if (TOKEN_ID) {
             TNT721.token_id = Number(TOKEN_ID) + 1;
         }
-        if(!TNT721.properties.artist.id){
-            debugger
-        }
         return TNT721
     }
     return NFT;

@@ -2,7 +2,7 @@ const {ethers} = require("ethers");
 
 // init contract
 const offer_abi = require("../abi/offer_abi.json");
-const offer_addr = "0x7831bA239b42acb4e9339991bE8b4B67bF18892B";
+const offer_addr = "0x97D3EdFe60c8976eaf5d2D7e87FA8229dFC897f2";
 const provider = new ethers.providers.JsonRpcProvider("http://142.44.213.241:18888/rpc");
 const offerContract = new ethers.Contract(offer_addr, offer_abi, provider);
 
@@ -19,10 +19,10 @@ class Offer {
         const nftCollection = this.server.hmongoose.connection.models.nft;
         const offers = await offerContract.fetchOffers();
 
-        offerContract.on("OfferCreated", this._indexOffer);
-        offerContract.on("OfferAccepted", this._removeOffer);
-        offerContract.on("OfferDenied", this._removeOffer);
-        offerContract.on("OfferCanceled", this._removeOffer);
+        offerContract.on("OfferCreated", this._indexOffer.bind(this));
+        offerContract.on("OfferAccepted", this._removeOffer.bind(this));
+        offerContract.on("OfferDenied", this._removeOffer.bind(this));
+        offerContract.on("OfferCanceled", this._removeOffer.bind(this));
 
         const item_ids = offers.map((x) => Number(x.itemId));
 
@@ -102,6 +102,14 @@ class Offer {
         const nft = await nftCollection.getOrCreate(nftContract.toLowerCase(), tokenId.toString());
         nft.tnt721.properties.offers = nft.tnt721.properties.offers.filter(x => x.itemId === itemId);
         return await nft.save();
+    }
+
+
+    async getNFTOfferInfo(contract, tokenId) {
+        const offerInfo = await offerContract.getByNftContractsTokenId(contract, tokenId);
+        return offerInfo.map((x) => {
+            return {itemId: x.itemId.toString(), offerer: x.offerer.toLowerCase(), price: x.price.toString()}
+        })
     }
 
 }

@@ -12,7 +12,19 @@ class tnt721 {
         this.server = server;
     }
 
-    async get_tns_info(contract_addr, token_id) {
+    async get_info(contract_addr, token_id, isTNS = false) {
+        let tnt721;
+        if (isTNS) {
+            tnt721 = await this._get_tns_info(contract_addr, token_id);
+        } else {
+            tnt721 = await this._get_nft_info(contract_addr, token_id);
+        }
+        tnt721.properties.offers = await this.server.app.offer.getNFTOfferInfo(contract_addr, token_id);
+        tnt721.properties.selling_info = await this.server.app.marketplace.getNFTSellInfo(contract_addr, token_id);
+        return tnt721
+    }
+
+    async _get_tns_info(contract_addr, token_id) {
         const sequelize = this.server.plugins["hapi-sequelizejs"].thetaboard;
 
         const NFT = await sequelize.getModel('NFT').findOne({
@@ -52,7 +64,7 @@ class tnt721 {
         }
     }
 
-    async get_info(contract_addr, token_id) {
+    async _get_nft_info(contract_addr, token_id) {
         const contract = new ethers.Contract(contract_addr, nft_abi, provider);
         let token_uri = await contract.tokenURI(token_id);
         const parsed = new URL(token_uri);

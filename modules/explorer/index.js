@@ -303,9 +303,9 @@ const explorer = function (server, options, next) {
             const wallet_adr = req.params.wallet_adr;
             const pageNumber = req.query.pageNumber ? req.query.pageNumber : 1;
             const filterForContract = req.query.contractAddr;
+            const onlyOffers = req.query.onlyOffers
 
-            // return var
-            const NFTs721 = [];
+            // TODO: need to fetch info for all nft that don't have a nft721 yet, otherwise filters are not working
 
             // get currently sold NFT
             const nftCollection = server.hmongoose.connection.models.nft;
@@ -316,8 +316,44 @@ const explorer = function (server, options, next) {
                 ]
             }
             if (filterForContract) {
-                condition.contract = filterForContract
+                condition.contract = filterForContract;
             }
+            if (onlyOffers) {
+                condition["tnt721.properties.offers.itemId"] = {$exists: true, $ne: null};
+            }
+
+            const [Items721, itemsCount] = await Promise.all([
+                nftCollection.find(condition).sort({blockNumber: -1}).skip((pageNumber - 1) * showPerPage).limit(showPerPage),
+                nftCollection.count(condition)]);
+
+
+            const walletsNFTs721 = await Promise.all(Items721.map(async (nft) => {
+                nft = await nftCollection.getOrCreate(nft['contract'], nft['tokenId']);
+                return nft.toJSON().tnt721;
+            }));
+
+
+            return {
+                totalCount: itemsCount,
+                NFTs: walletsNFTs721
+            };
+        }
+    });
+
+    // TODO: not sure if this is the right route name and the right path
+    server.route({
+        path: '/wallet-nft-offers/{wallet_adr}',
+        method: 'GET',
+        handler: async (req, h) => {
+            // params
+            const showPerPage = 12;
+            const wallet_adr = req.params.wallet_adr;
+            const pageNumber = req.query.pageNumber ? req.query.pageNumber : 1;
+
+            // get currently sold NFT
+            const nftCollection = server.hmongoose.connection.models.nft;
+            const condition = {"tnt721.properties.offers.offerer": wallet_adr.toLowerCase()}
+
             const [Items721, itemsCount] = await Promise.all([
                 nftCollection.find(condition).sort({blockNumber: -1}).skip((pageNumber - 1) * showPerPage).limit(showPerPage),
                 nftCollection.count(condition)]);
@@ -325,13 +361,12 @@ const explorer = function (server, options, next) {
 
             const walletsNFTs721 = await Promise.all(Items721.map(async (nft) => {
                 if (nft.tnt721.name) {
-                    return nft.tnt721;
+                    return nft.toJSON().tnt721;
                 } else {
                     nft = await nftCollection.getOrCreate(nft['contract'], nft['tokenId']);
-                    return nft.tnt721;
+                    return nft.toJSON().tnt721;
                 }
             }));
-
 
             return {
                 totalCount: itemsCount,
@@ -354,7 +389,7 @@ const explorer = function (server, options, next) {
                 const nftCollection = server.hmongoose.connection.models.nft;
 
                 const nft = await nftCollection.getOrCreate(contract_addr, token_id);
-                return nft.tnt721;
+                return nft.toJSON().tnt721;
             } catch (error) {
                 console.log(error);
                 return Boom.badRequest(error);
