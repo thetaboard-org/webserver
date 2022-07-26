@@ -160,8 +160,8 @@ const marketplaceRoute = async function (server, options, next) {
                             $ne: null
                         }
                     });
-
-                    const newly = await cursor.sort({"properties.selling_info.itemId": -1}).limit(1);
+                    //.sort({"properties.selling_info.itemId": -1}).
+                    const newly = await cursor.limit(1);
                     return newly.map((x) => x.toJSON().tnt721);
                 }
             }

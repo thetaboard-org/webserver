@@ -295,6 +295,32 @@ const explorer = function (server, options, next) {
 
 
     server.route({
+        path: '/wallet-nft-facets/{wallet_adr}',
+        method: 'GET',
+        handler: async (req, h) => {
+            const wallet_adr = req.params.wallet_adr;
+            const nftCollection = server.hmongoose.connection.models.nft;
+            const condition = {
+                "$or": [
+                    {"owner": wallet_adr.toLowerCase()},
+                    {"tnt721.properties.selling_info.seller": wallet_adr.toLowerCase()}
+                ]
+            }
+
+            const [artists, drops] = await Promise.all(
+                [nftCollection.distinct("tnt721.properties.artist", condition),
+                    nftCollection.distinct("tnt721.properties.drop", condition)]);
+
+            const marketplace = server.app.marketplace;
+            return {
+                categories: marketplace.facets.categories,
+                artists: artists.filter((x)=>!!x),
+                drops: drops.filter((x)=>!!x)
+            }
+        }
+    })
+
+    server.route({
         path: '/wallet-nft/{wallet_adr}',
         method: 'GET',
         handler: async (req, h) => {
@@ -335,7 +361,7 @@ const explorer = function (server, options, next) {
 
             return {
                 totalCount: itemsCount,
-                NFTs: walletsNFTs721
+                NFTs: walletsNFTs721,
             };
         }
     });

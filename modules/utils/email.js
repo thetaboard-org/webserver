@@ -28,7 +28,6 @@ function mail(from, email, subject, mailbody) {
         from: from, // sender address
         to: email, // list of receivers
         subject: subject, // Subject line
-        //text: result.price, // plaintext body
         html: mailbody  // html body
     };
 
