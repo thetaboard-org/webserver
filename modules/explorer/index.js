@@ -314,8 +314,8 @@ const explorer = function (server, options, next) {
             const marketplace = server.app.marketplace;
             return {
                 categories: marketplace.facets.categories,
-                artists: artists.filter((x)=>!!x),
-                drops: drops.filter((x)=>!!x)
+                artists: artists.filter((x) => !!x),
+                drops: drops.filter((x) => !!x)
             }
         }
     })
@@ -330,22 +330,43 @@ const explorer = function (server, options, next) {
             const pageNumber = req.query.pageNumber ? req.query.pageNumber : 1;
             const filterForContract = req.query.contractAddr;
             const onlyOffers = req.query.onlyOffers
+            const search = req.query.search ? req.query.search : "";
 
             // TODO: need to fetch info for all nft that don't have a nft721 yet, otherwise filters are not working
 
             // get currently sold NFT
             const nftCollection = server.hmongoose.connection.models.nft;
             const condition = {
-                "$or": [
-                    {"owner": wallet_adr.toLowerCase()},
-                    {"tnt721.properties.selling_info.seller": wallet_adr.toLowerCase()}
-                ]
+                "$and": [
+                    {
+                        "$or": [
+                            {"owner": wallet_adr.toLowerCase()},
+                            {"tnt721.properties.selling_info.seller": wallet_adr.toLowerCase()}
+                        ]
+                    }]
             }
+
+
             if (filterForContract) {
                 condition.contract = filterForContract;
             }
             if (onlyOffers) {
                 condition["tnt721.properties.offers.itemId"] = {$exists: true, $ne: null};
+            }
+
+            ['artist', 'drop'].forEach((facet) => {
+                if (req.query[facet]) {
+                    const or = req.query[facet].split(',').map((x) => {
+                        const filter = {};
+                        filter[`tnt721.properties.${facet}.id`] = Number(x);
+                        return filter
+                    })
+                    condition["$and"].push({"$or": or})
+                }
+            });
+
+            if (search) {
+                condition['$text'] = {"$search": search};
             }
 
             const [Items721, itemsCount] = await Promise.all([
