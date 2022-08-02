@@ -42,7 +42,21 @@ class NFT {
                     "name": String,
                     "description": String,
                     "properties": {
-                        "artist": {}, // Defined in the artist model
+                        "artist": {
+                            "bio": String,
+                            "name": String,
+                            "logo-name": String,
+                            "image": String,
+                            "instagram": String,
+                            "youtube": String,
+                            "twitter": String,
+                            "website": String,
+                            "wallet-addr": String,
+                            "created-at": Date,
+                            "updated-at": Date,
+                            "deleted-at": Date,
+                            "id": Number
+                        }, // Defined in the artist model
                         "drop": {}, // Defined in the drop model
                         "assets": [], // Defined in the asset model
                         "selling_info": {
@@ -88,7 +102,7 @@ class NFT {
     }
 
     _statics() {
-        this.schema.statics.getOrCreate = async (contract, tokenId, useCache = false) => {
+        this.schema.statics.getOrCreate = async (contract, tokenId, useCache = true) => {
             const model = this.server.hmongoose.connection.models.nft;
 
             let nft = await model.findOne({contract: contract, tokenId: tokenId});
@@ -99,9 +113,7 @@ class NFT {
             }
 
             try {
-                // special handling for TNS
-                const isTNS = contract.toLowerCase() === '0xbb4d339a7517c81c32a01221ba51cbd5d3461a94';
-                nft.tnt721 = await this.server.app.tnt721.get_info(contract, tokenId, isTNS);
+                nft.tnt721 = await this.server.app.tnt721.get_info(contract, tokenId);
                 return await nft.save();
             } catch (e) {
                 console.error("Could not get NFT");

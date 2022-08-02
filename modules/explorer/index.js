@@ -306,7 +306,6 @@ const explorer = function (server, options, next) {
                     {"tnt721.properties.selling_info.seller": wallet_adr.toLowerCase()}
                 ]
             }
-
             const [artists, drops] = await Promise.all(
                 [nftCollection.distinct("tnt721.properties.artist", condition),
                     nftCollection.distinct("tnt721.properties.drop", condition)]);
@@ -328,7 +327,6 @@ const explorer = function (server, options, next) {
             const showPerPage = 12;
             const wallet_adr = req.params.wallet_adr;
             const pageNumber = req.query.pageNumber ? req.query.pageNumber : 1;
-            const filterForContract = req.query.contractAddr;
             const onlyOffers = req.query.onlyOffers
             const search = req.query.search ? req.query.search : "";
 
@@ -346,12 +344,16 @@ const explorer = function (server, options, next) {
                     }]
             }
 
-
-            if (filterForContract) {
-                condition.contract = filterForContract;
+            if (req.query['category'] === "0,1") {
+                // don't do anything if both are selected
+            } else if (req.query['category'] === "0") { // only TNS
+                condition['$and'].push({'contract': "0xbb4d339a7517c81c32a01221ba51cbd5d3461a94"});
+            } else if (req.query['category'] === "1") { // everything but TNS
+                condition['$and'].push({'contract': {"$ne": "0xbb4d339a7517c81c32a01221ba51cbd5d3461a94"}});
             }
+
             if (onlyOffers) {
-                condition["tnt721.properties.offers.itemId"] = {$exists: true, $ne: null};
+                condition['$and'].push({"tnt721.properties.offers.itemId": {$exists: true, $ne: null}});
             }
 
             ['artist', 'drop'].forEach((facet) => {

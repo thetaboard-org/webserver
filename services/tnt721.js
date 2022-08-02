@@ -12,8 +12,9 @@ class tnt721 {
         this.server = server;
     }
 
-    async get_info(contract_addr, token_id, isTNS = false) {
+    async get_info(contract_addr, token_id) {
         let tnt721;
+        const isTNS = contract_addr.toLowerCase() === '0xbb4d339a7517c81c32a01221ba51cbd5d3461a94';
         if (isTNS) {
             tnt721 = await this._get_tns_info(contract_addr, token_id);
         } else {
