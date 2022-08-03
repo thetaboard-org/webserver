@@ -378,13 +378,17 @@ const explorer = function (server, options, next) {
 
             const walletsNFTs721 = await Promise.all(Items721.map(async (nft) => {
                 nft = await nftCollection.getOrCreate(nft['contract'], nft['tokenId']);
-                return nft.toJSON().tnt721;
+                if (nft) {
+                    return nft.toJSON().tnt721;
+                } else {
+                    return null;
+                }
             }));
 
 
             return {
                 totalCount: itemsCount,
-                NFTs: walletsNFTs721,
+                NFTs: walletsNFTs721.filter((x) => !!x), // remove nulls
             };
         }
     });
