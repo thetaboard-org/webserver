@@ -330,9 +330,6 @@ const explorer = function (server, options, next) {
             const onlyOffers = req.query.onlyOffers
             const search = req.query.search ? req.query.search : "";
 
-            // TODO: need to fetch info for all nft that don't have a nft721 yet, otherwise filters are not working
-
-            // get currently sold NFT
             const nftCollection = server.hmongoose.connection.models.nft;
             const condition = {
                 "$and": [
@@ -343,6 +340,11 @@ const explorer = function (server, options, next) {
                         ]
                     }]
             }
+
+            // check if all nft's have been fetched for this wallet, if not fetch the tnt721 infos
+            const conditionForTNT721 = Object.assign([], condition["$and"]);
+            conditionForTNT721.push({"tnt721": {$exists: false}});
+            const missingTNT = await nftCollection.find({"$and": conditionForTNT721});
 
             if (req.query['category'] === "0,1") {
                 // don't do anything if both are selected

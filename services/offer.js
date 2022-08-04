@@ -2,7 +2,7 @@ const {ethers} = require("ethers");
 
 // init contract
 const offer_abi = require("../abi/offer_abi.json");
-const offer_addr = "0x97D3EdFe60c8976eaf5d2D7e87FA8229dFC897f2";
+const offer_addr = "0x890EC496Bc6e02a46439d0E22fA12d692f7B7920";
 const provider = new ethers.providers.JsonRpcProvider("http://142.44.213.241:18888/rpc");
 const offerContract = new ethers.Contract(offer_addr, offer_abi, provider);
 
@@ -104,14 +104,12 @@ class Offer {
         return await nft.save();
     }
 
-
     async getNFTOfferInfo(contract, tokenId) {
         const offerInfo = await offerContract.getByNftContractsTokenId(contract, tokenId);
         return offerInfo.map((x) => {
             return {itemId: x.itemId.toString(), offerer: x.offerer.toLowerCase(), price: x.price.toString()}
         })
     }
-
 }
 
 module.exports = Offer;
