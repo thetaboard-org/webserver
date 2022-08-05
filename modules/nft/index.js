@@ -151,7 +151,7 @@ const nft = function (server, options, next) {
                         const current_user = await req.getModel('User').findOne({where: {'email': req.auth.credentials.email}});
 
                         const dropId = req.payload.data.attributes.dropId
-                        const NFT = req.getModel('NFT').build(req.payload.data.attributes);
+                        const nft = req.getModel('NFT').build(req.payload.data.attributes);
 
                         // If drop id is present, it means that we are creating an NFT from Thetaboard
                         // otherwise they are claiming an NFT
@@ -172,12 +172,12 @@ const nft = function (server, options, next) {
                                 return Boom.unauthorized();
                             }
                         }
-                        await NFT.save();
-                        if(NFT.nftContractId){
+                        await nft.save();
+                        if(nft.nftContractId){
                             const nftCollection = server.hmongoose.connection.models.nft;
                             nftCollection.updateForContract(NFT.nftContractId)
                         }
-                        return {"data": NFT.toJSON()};
+                        return {"data": nft.toJSON()};
                     } catch (e) {
                         if (e && e.errors) {
                             e = e.errors[0].message;
