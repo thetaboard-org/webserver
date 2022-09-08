@@ -22,7 +22,6 @@ class Marketplace {
     async initStructure() {
         const server = this.server;
         const nftCollection = server.hmongoose.connection.models.nft;
-        // await nftCollection.updateMany({}, { $unset : { tnt721 : 1} })
 
         const sellingItems = await marketplaceContract.fetchSellingItems();
 

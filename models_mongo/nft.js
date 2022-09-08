@@ -81,23 +81,23 @@ class NFT {
 
     _index() {
         this.schema.index({
-                "name": "text",
-                "description": "text",
-                "properties.artist.name": "text",
-                "properties.artist.bio": "text",
-                "properties.drop.name": "text",
-                "properties.drop.description": "text"
+                "tnt721.name": "text",
+                "tnt721.description": "text",
+                "tnt721.properties.artist.name": "text",
+                "tnt721.properties.artist.bio": "text",
+                "tnt721.properties.drop.name": "text",
+                "tnt721.properties.drop.description": "text"
             },
             {
                 weights: {
-                    "name": 10,
-                    "description": 5,
-                    "properties.artist.name": 8,
-                    "properties.artist.bio": 3,
-                    "properties.drop.name": 8,
-                    "properties.drop.description": 3
+                    "tnt721.name": 10,
+                    "tnt721.description": 5,
+                    "tnt721.properties.artist.name": 8,
+                    "tnt721.properties.artist.bio": 3,
+                    "tnt721.properties.drop.name": 8,
+                    "tnt721.properties.drop.description": 3
                 },
-                name: "TextIndex"
+                name: "SearchIndexOnNameArtistDrop"
             });
     }
 
