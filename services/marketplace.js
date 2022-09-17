@@ -82,10 +82,11 @@ class Marketplace {
         const nft = await nftCollection.getOrCreate(nftContract.toLowerCase(), tokenId.toString());
         if (!isSold) {
             console.log("Adding new item to marketplace : ", Number(itemId.toString()));
-            await this._indexTNT721(nft, itemId, seller, price, category);
+            await this._indexTNT721(nft, itemId, seller, price.toString(), category);
         } else {
             console.log("Removing item from marketplace : ", Number(itemId.toString()));
-            const id = `${nftContract}:${tokenId}`;
+            const id = `${nftContract.toLowerCase()}:${tokenId}`;
+
             nftCollection.updateOne({_id: id},
                 {"$set": {"tnt721.properties.selling_info": null}});
         }
