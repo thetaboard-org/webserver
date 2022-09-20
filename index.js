@@ -167,6 +167,12 @@ const manifest = {
                 }
             },
             {
+                plugin: './airdrop',
+                routes: {
+                    prefix: '/api/airdrops'
+                }
+            },
+            {
                 plugin: './nftAsset',
                 routes: {
                     prefix: '/api/nft-assets'

@@ -53,11 +53,7 @@ module.exports = function (sequelize, DataTypes) {
             indexes: [{
                 fields: ['artistId'],
                 unique: false
-            },
-                {
-                    fields: ['dropId'],
-                    unique: false
-                }],
+            }],
             paranoid: true
         });
 
