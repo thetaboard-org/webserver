@@ -1,23 +1,33 @@
 module.exports = function (sequelize, DataTypes) {
     const Airdrop = sequelize.define('Airdrop', {
-            //link artist record
-            artistId: {
+
+            count: {
                 type: DataTypes.INTEGER,
-                allowNull: false,
-            },
-            nftId: {
-                type: DataTypes.INTEGER,
-                allowNull: false,
-            },
-            sourceNFT: {
-                type: DataTypes.STRING,
                 allowNull: false
             },
             isDeployed: {
                 type: DataTypes.BOOLEAN,
                 allowNull: false,
                 default: false
-            }
+            },
+            winners: {
+                type: DataTypes.TEXT,
+                allowNull: false,
+            },
+            //link artist record
+            artistId: {
+                type: DataTypes.INTEGER,
+                allowNull: false,
+            },
+            sourceNftId: {
+                type: DataTypes.INTEGER,
+                allowNull: false,
+            },
+            giftNftId: {
+                type: DataTypes.INTEGER,
+                allowNull: false
+            },
+
         },
         {
             indexes: [{
@@ -34,7 +44,10 @@ module.exports = function (sequelize, DataTypes) {
             }
         });
         Airdrop.belongsTo(models.NFT, {
-            foreignKey: 'nftId'
+            foreignKey: 'sourceNftId'
+        });
+        Airdrop.belongsTo(models.NFT, {
+            foreignKey: 'giftNftId'
         });
     }
 

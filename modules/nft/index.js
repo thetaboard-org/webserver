@@ -68,11 +68,15 @@ const nft = function (server, options, next) {
                             nft.relationships = {
                                 artist: {
                                     data: {"type": "artist", "id": rawNFT.artistId}
-                                },
-                                drop: {
+                                }
+                            }
+
+                            if (rawNFT.dropId) {
+                                nft.relationships.drop = {
                                     data: {"type": "drop", "id": rawNFT.dropId}
                                 }
                             }
+
                             const rawNFTAssets = await req.getModel('NFTAsset').findAll({where: {'nftId': nft.id}});
                             nft.relationships["nft-assets"] = {
                                 data: rawNFTAssets.map((nftAsset) =>
@@ -123,7 +127,7 @@ const nft = function (server, options, next) {
                             NFT[attr] = attributes[attr];
                         }
                         await NFT.save()
-                        if(NFT.nftContractId){
+                        if (NFT.nftContractId) {
                             const nftCollection = server.hmongoose.connection.models.nft;
                             nftCollection.updateForContract(NFT.nftContractId)
                         }
@@ -173,7 +177,7 @@ const nft = function (server, options, next) {
                             }
                         }
                         await nft.save();
-                        if(nft.nftContractId){
+                        if (nft.nftContractId) {
                             const nftCollection = server.hmongoose.connection.models.nft;
                             nftCollection.updateForContract(NFT.nftContractId)
                         }

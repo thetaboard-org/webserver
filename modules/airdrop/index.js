@@ -8,15 +8,34 @@ const airdrop = function (server, options, next) {
             options: {
                 handler: async function (req, h) {
                     try {
-                        let airdrops;
-                        if (req.query) {
-                            airdrops = await req.getModel('Airdrop').findAll({where: req.query});
-                        } else {
-                            airdrops = await req.getModel('Airdrop').findAll();
+                        const pageNumber = req.query.pageNumber ? Number(req.query.pageNumber) : 1;
+                        const sortBy = req.query.sortBy ? req.query.sortBy : "id";
+                        const showPerPage = 6;
+                        const options = {where: {}};
+                        if (pageNumber) {
+                            options.limit = showPerPage;
+                            options.offset = (pageNumber - 1) * showPerPage;
                         }
+                        if (sortBy) {
+                            options.order = [[sortBy, "ASC"]]
+                        }
+                        const airdrops = await req.getModel('Airdrop').findAll(options);
+
                         const response = {"data": []};
                         response.data = airdrops.map(airdrop => {
-                            return airdrop.toJSON();
+                            const airdropJSON = airdrop.toJSON();
+                            airdropJSON.relationships = {
+                                artist: {
+                                    data: {"type": "artist", "id": airdrop.artistId}
+                                },
+                                "gift-nft": {
+                                    data:{"type": "nft", "id": airdrop.giftNftId}
+                                },
+                                "source-nft": {
+                                    data:{"type": "nft", "id": airdrop.sourceNftId}
+                                }
+                            }
+                            return airdropJSON;
                         });
                         return response;
                     } catch (e) {
@@ -36,7 +55,20 @@ const airdrop = function (server, options, next) {
                     try {
                         const airdrop = await req.getModel('Airdrop').findOne({where: {'id': req.params.id}});
                         let response = {"data": {}};
-                        response.data = airdrop.toJSON();
+                        const airdropJSON = airdrop.toJSON();
+                        airdropJSON.relationships = {
+                            artist: {
+                                data: {"type": "artist", "id": airdrop.artistId}
+                            },
+                            giftNftId: {
+                                data:{"type": "nft", "id": airdrop.giftNftId}
+                            },
+                            sourceNftId: {
+                                data:{"type": "nft", "id": airdrop.sourceNftId}
+                            }
+                        }
+                        response.data = airdropJSON;
+
                         return response;
                     } catch (e) {
                         if (e && e.errors) {
@@ -72,14 +104,6 @@ const airdrop = function (server, options, next) {
                         }
                         await airdrop.save()
 
-                        // update NFT collection cache
-                        const nftCollection = server.hmongoose.connection.models.nft;
-                        for (const NFT of await airdrop.getNFTs()) {
-                            if (NFT.nftContractId) {
-                                nftCollection.updateForContract(NFT.nftContractId);
-                            }
-                        }
-
                         let response = {"data": {}};
                         response.data = airdrop.toJSON();
                         return response;
@@ -110,16 +134,8 @@ const airdrop = function (server, options, next) {
                                 && req.payload.data.attributes.userId === current_user.id))) {
                             return Boom.unauthorized();
                         }
-                        const airdrop = req.getModel('airdrop').build(req.payload.data.attributes);
+                        const airdrop = req.getModel('Airdrop').build(req.payload.data.attributes);
                         await airdrop.save()
-
-                        // update NFT collection cache
-                        const nftCollection = server.hmongoose.connection.models.nft;
-                        for (const NFT of await airdrop.getNFTs()) {
-                            if (NFT.nftContractId) {
-                                nftCollection.updateForContract(NFT.nftContractId);
-                            }
-                        }
 
                         return {"data": airdrop.toJSON()};
                     } catch (e) {
