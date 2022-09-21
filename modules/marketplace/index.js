@@ -27,7 +27,7 @@ const marketplaceRoute = async function (server, options, next) {
                 handler: async function (req, h) {
                     const pageNumber = req.query.pageNumber ? req.query.pageNumber : 1;
                     const showPerPage = 20;
-                    const sortBy = req.query.sortBy ? req.query.sortBy : ""; // only work for price for now
+                    const sortBy = req.query.sortBy ? req.query.sortBy : ""; // only work for price/name for now
                     const orderBy = req.query.orderBy ? req.query.orderBy : "";
                     const nftCollection = server.hmongoose.connection.models.nft;
                     const cursor = nftCollection.find({
@@ -37,7 +37,10 @@ const marketplaceRoute = async function (server, options, next) {
                         }
                     })
 
-                    if (sortBy) {
+                    if (sortBy === 'name') {
+                        const sort = {"tnt721.name": orderBy === "desc" ? -1 : 1}
+                        cursor.sort(sort)
+                    } else if (sortBy === 'price') {
                         const sort = {"tnt721.properties.selling_info.price": orderBy === "desc" ? -1 : 1}
                         cursor.sort(sort).collation({locale: "en_US", numericOrdering: true});
                     } else {
@@ -73,7 +76,7 @@ const marketplaceRoute = async function (server, options, next) {
                 handler: async function (req, h) {
                     const pageNumber = req.query.pageNumber ? req.query.pageNumber : 1;
                     const search = req.query.search ? req.query.search : "";
-                    const sortBy = req.query.sortBy ? req.query.sortBy : ""; // only work for price for now
+                    const sortBy = req.query.sortBy ? req.query.sortBy : ""; // only work for price/name for now
                     const orderBy = req.query.orderBy ? req.query.orderBy : "";
                     const showPerPage = 20;
 
@@ -103,7 +106,7 @@ const marketplaceRoute = async function (server, options, next) {
                             const [min, max] = x.split('|');
                             let maxParsed, minParsed = ethers.utils.parseEther(min);
                             if (max === 'infinity') {
-                                 maxParsed = ethers.utils.parseEther(String(Number.MAX_SAFE_INTEGER));
+                                maxParsed = ethers.utils.parseEther(String(Number.MAX_SAFE_INTEGER));
                             } else {
                                 maxParsed = ethers.utils.parseEther(max);
                             }
@@ -122,7 +125,11 @@ const marketplaceRoute = async function (server, options, next) {
                     }
 
                     const cursor = nftCollection.find(filter)
-                    if (sortBy) {
+
+                    if (sortBy === 'name') {
+                        const sort = {"tnt721.name": orderBy === "desc" ? -1 : 1}
+                        cursor.sort(sort)
+                    } else if (sortBy === 'price') {
                         const sort = {"tnt721.properties.selling_info.price": orderBy === "desc" ? -1 : 1}
                         cursor.sort(sort).collation({locale: "en_US", numericOrdering: true});
                     } else if (search) {
