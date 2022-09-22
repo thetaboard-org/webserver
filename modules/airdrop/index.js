@@ -8,6 +8,7 @@ const airdrop = function (server, options, next) {
             options: {
                 handler: async function (req, h) {
                     try {
+                        const artistId = req.query.artistId;
                         const pageNumber = req.query.pageNumber ? Number(req.query.pageNumber) : 1;
                         const sortBy = req.query.sortBy ? req.query.sortBy : "id";
                         const showPerPage = 6;
@@ -18,6 +19,9 @@ const airdrop = function (server, options, next) {
                         }
                         if (sortBy) {
                             options.order = [[sortBy, "ASC"]]
+                        }
+                        if(artistId){
+                            options.where.artistId = artistId;
                         }
                         const airdrops = await req.getModel('Airdrop').findAll(options);
 
@@ -53,8 +57,9 @@ const airdrop = function (server, options, next) {
             options: {
                 handler: async function (req, h) {
                     try {
-                        const airdrop = await req.getModel('Airdrop').findOne({where: {'id': req.params.id}});
-                        let response = {"data": {}};
+                        const airdrop = await req.getModel('Airdrop').findOne(
+                            {where: {'id': req.params.id}});
+                        const response = {"data": {}};
                         const airdropJSON = airdrop.toJSON();
                         airdropJSON.relationships = {
                             artist: {
@@ -98,6 +103,9 @@ const airdrop = function (server, options, next) {
                             artist.userId === current_user.id)) {
                             return Boom.unauthorized();
                         }
+
+                        const airdrop = await req.getModel('Airdrop').findOne(
+                            {where: {'id': req.params.id}});
 
                         // update attributes
                         const attributes = req.payload.data.attributes;
