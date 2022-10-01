@@ -20,7 +20,7 @@ const airdrop = function (server, options, next) {
                         if (sortBy) {
                             options.order = [[sortBy, "ASC"]]
                         }
-                        if(artistId){
+                        if (artistId) {
                             options.where.artistId = artistId;
                         }
                         const airdrops = await req.getModel('Airdrop').findAll(options);

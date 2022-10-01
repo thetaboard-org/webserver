@@ -65,7 +65,7 @@ const transactionExport = function (server, options, next) {
                             return buildPayload(transaction, prices, currency, wallet_addresses);
                         });
 
-                        return stringify(finalList, {
+                        return stringify.stringify(finalList, {
                             header: true
                         }, function (err, dataCSV) {
                             return h.response(dataCSV)
@@ -160,7 +160,7 @@ getTransactionHistories = async function (req, wallet_addresses, start_date_tx, 
             },
         ]
     }
-    return transactions_collection.find(match).sort({"timestamp": -1}).toArray();
+    return transactions_collection.find(match).sort({"timestamp": -1});
 };
 
 getHistoricPrices = async function (req, start_date_raw, end_date_raw, currency) {
