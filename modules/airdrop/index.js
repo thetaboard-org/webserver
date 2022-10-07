@@ -24,8 +24,8 @@ const airdrop = function (server, options, next) {
                             options.where.artistId = artistId;
                         }
                         const airdrops = await req.getModel('Airdrop').findAll(options);
-
-                        const response = {"data": []};
+                        const airdrops_count = await req.getModel('Airdrop').count(options);
+                        const response = {"meta": {"total": airdrops_count}, "data": []};
                         response.data = airdrops.map(airdrop => {
                             const airdropJSON = airdrop.toJSON();
                             airdropJSON.relationships = {
