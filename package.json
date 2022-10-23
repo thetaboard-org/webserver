@@ -45,7 +45,10 @@
     "tar": ">=6.1.11",
     "uuid": "^8.3.2",
     "video-hash": "^1.0.0",
-    "web3": "^1.7.3"
+    "web3": "^1.7.3",
+    "canvas": "^2.8.0",
+    "gif-encoder-2": "^1.0.5",
+    "sha1": "^1.1.1"
   },
   "devDependencies": {
     "dateformat": "^4.5.1"

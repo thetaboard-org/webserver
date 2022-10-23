@@ -19,10 +19,37 @@ const videoHash = require('video-hash')({
     strength: 0.1
 });
 
+// generation imports
+const generate = require("./generation");
+
+
 const NIFTIES = function (server, options, next) {
     server.route([
             {
-                method: 'get',
+                method: 'GET',
+                path: "/generative",
+                options: {
+                    handler: async (req, h) => {
+
+
+                        const totalEditions = 100;
+                        const layers = [
+                            {name: "Head"},
+                            {name: "Mouth"},
+                            {name: "Eyes"},
+                            {name: "Eyeswear"},
+                            {name: "Headwear"},
+                        ];
+
+
+                        await generate.create(layers, totalEditions)
+
+                        return "worked";
+                    }
+                }
+            },
+            {
+                method: 'GET',
                 path: '/{NFT_ID}/{TOKEN_ID}',
                 options: {
                     cors: true,
@@ -50,7 +77,7 @@ const NIFTIES = function (server, options, next) {
                 },
             },
             {
-                method: 'get',
+                method: 'GET',
                 path: '/{NFT_ID}',
                 options: {
                     cors: true,
