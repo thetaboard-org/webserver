@@ -14,7 +14,9 @@ class tnt721 {
 
     async get_info(contract_addr, token_id) {
         let tnt721;
-        const isTNS = contract_addr.toLowerCase() === '0xbb4d339a7517c81c32a01221ba51cbd5d3461a94';
+        const TNS_contract = "0x7DaEEe00fb89d5c46B8e8387fd9aaC79D6910a06".toLowerCase();
+        const TNS_contract_old = "0xbb4d339a7517c81c32a01221ba51cbd5d3461a94";
+        const isTNS = [TNS_contract, TNS_contract_old].includes(contract_addr.toLowerCase());
         if (isTNS) {
             tnt721 = await this._get_tns_info(contract_addr, token_id);
         } else {
@@ -38,12 +40,22 @@ class tnt721 {
             artist["id"] = NFT.Artist.id;
         }
 
+        let image, description;
+
+        if (contract_addr.toLowerCase() === "0xbb4d339a7517c81c32a01221ba51cbd5d3461a94") {
+            image = "/assets/nft/tns_placeholder_old.png";
+            description = "DEPRECATED: TNS, Theta Name Service domain"
+        } else {
+            image = "/assets/nft/tns_placeholder.png";
+            description = "TNS, Theta Name Service domain"
+        }
+
         const TNT721 = {
             "contract_addr": contract_addr.toLowerCase(),
             "original_token_id": token_id,
-            "image": "/assets/nft/tns_placeholder.png",
+            "image": image,
             "name": null,
-            "description": "TNS, Theta name service domain",
+            "description": description,
             "properties": {
                 "artist": artist,
                 "drop": null,
