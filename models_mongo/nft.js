@@ -102,7 +102,7 @@ class NFT {
     }
 
     _statics() {
-        this.schema.statics.getOrCreate = async (contract, tokenId, useCache = true) => {
+        this.schema.statics.getOrCreate = async (contract, tokenId, useCache = false) => {
             const model = this.server.hmongoose.connection.models.nft;
 
             let nft = await model.findOne({contract: contract, tokenId: tokenId});
