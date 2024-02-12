@@ -104,9 +104,9 @@ setupPublicENSplitReward = async function (EN, affiliate) {
     const en_addr = EN.summary.slice(0, 42);
     await got(`http://142.44.213.241:8002/edgeNode/write_key?EN_SERVER=${tfuel_stake_host}/edgeNode&EN_ID=${EN.nodeId}`)
     if (!publicEdgeNode.affiliateId) {
-        await got(`http://142.44.213.241:8002/edgeNode/do_split?EN_ADDR=${en_addr}&EN_ID=${EN.nodeId}&REWARD_ADDR=0xa078C2852eb6e455f97EeC21e39F8ef24173Df60&SPLIT_REWARD=300`);
+        await got(`http://142.44.213.241:8002/edgeNode/do_split?EN_ADDR=${en_addr}&EN_ID=${EN.nodeId}&REWARD_ADDR=0xa078C2852eb6e455f97EeC21e39F8ef24173Df60&SPLIT_REWARD=500`);
     } else {
-        await got(`http://142.44.213.241:8002/edgeNode/do_split?EN_ADDR=${en_addr}&EN_ID=${EN.nodeId}&REWARD_ADDR=0xa078C2852eb6e455f97EeC21e39F8ef24173Df60&SPLIT_REWARD=200`);
+        await got(`http://142.44.213.241:8002/edgeNode/do_split?EN_ADDR=${en_addr}&EN_ID=${EN.nodeId}&REWARD_ADDR=0xa078C2852eb6e455f97EeC21e39F8ef24173Df60&SPLIT_REWARD=400`);
         await got(`http://142.44.213.241:8002/edgeNode/do_split?EN_ADDR=${en_addr}&EN_ID=${EN.nodeId}&REWARD_ADDR=${affiliate.address}&SPLIT_REWARD=100`);
     }
     EN.splitRewards = true;
