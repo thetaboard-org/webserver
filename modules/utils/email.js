@@ -1,9 +1,15 @@
-const nodemailer = require("nodemailer"),
-    Config = require('../../config/secrets.json'),
-    fs = require('fs');
+const nodemailer = require("nodemailer");
+const Config = require('../../config/secrets.json');
+const fs = require('fs');
 
 
-const smtpTransport = nodemailer.createTransport(`smtps://${encodeURIComponent(Config.email.username)}:${encodeURIComponent(Config.email.password)}@smtp.gmail.com:465");`)
+const smtpTransport = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: Config.email.username,
+        pass: Config.email.password
+    }
+});
 const host = process.env.NODE_ENV === 'development' ? 'http://localhost:8000' : 'https://thetaboard.io'
 
 const injectTemplate = (str, obj) => str.replace(/\${(.*?)}/g, (x, g) => obj[g]);
