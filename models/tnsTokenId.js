@@ -37,7 +37,7 @@ module.exports = function (sequelize, DataTypes) {
     }
 
 
-    TnsTokenId.sync({alter: true});
+    // TnsTokenId.sync({alter: true});
     return TnsTokenId;
 };
 

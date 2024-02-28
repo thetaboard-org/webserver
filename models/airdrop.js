@@ -72,7 +72,7 @@ module.exports = function (sequelize, DataTypes) {
             }, {})
         }
     }
-    Airdrop.sync({alter: true});
+    // Airdrop.sync({alter: true});
 
     return Airdrop;
 };
