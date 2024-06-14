@@ -21,7 +21,7 @@ const transactionHistory = function (server, options, next) {
                 req.theta_explorer_api_domain = "https://smart-contracts-sandbox-explorer.thetatoken.org:8443";
             }
         } else {
-            req.theta_explorer_api_domain = "https://explorer.thetatoken.org:8443";
+            req.theta_explorer_api_domain = "https://explorer-api.thetatoken.org";
         }
         return h.continue;
     })

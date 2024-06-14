@@ -74,7 +74,7 @@ module.exports = function (sequelize, DataTypes) {
 // todo this method should be in the model directly, but to do that we would need to merge publicEdgeNode.js and tfuelstake.js
 
 const got = require('got');
-const theta_explorer_api_domain = "https://explorer.thetatoken.org:8443";
+const theta_explorer_api_domain = "https://explorer-api.thetatoken.org";
 const api_token = "API_TOKEN" in process.env && process.env.API_TOKEN ? process.env.API_TOKEN : null;
 const wei_divider = 1000000000000000000;
 const theta_explorer_api_params = {
