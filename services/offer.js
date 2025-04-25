@@ -16,99 +16,122 @@ class Offer {
     }
 
     async initStructure() {
-        const nftCollection = this.server.hmongoose.connection.models.nft;
-        const offers = await offerContract.fetchOffers();
+        try {
+            const nftCollection = this.server.hmongoose.connection.models.nft;
+            const offers = await offerContract.fetchOffers();
 
-        offerContract.on("OfferCreated", this._indexOffer.bind(this));
-        offerContract.on("OfferAccepted", this._removeOffer.bind(this));
-        offerContract.on("OfferDenied", this._removeOffer.bind(this));
-        offerContract.on("OfferCanceled", this._removeOffer.bind(this));
+            offerContract.on("OfferCreated", this._indexOffer.bind(this));
+            offerContract.on("OfferAccepted", this._removeOffer.bind(this));
+            offerContract.on("OfferDenied", this._removeOffer.bind(this));
+            offerContract.on("OfferCanceled", this._removeOffer.bind(this));
 
-        const item_ids = offers.map((x) => Number(x.itemId));
+            const item_ids = offers.map((x) => Number(x.itemId));
 
-        const result = await nftCollection.updateMany({
-                "tnt721.properties.offers.itemId": {
-                    "$nin": item_ids, $exists: true,
-                    $ne: null
-                }
-            },
-            {"$set": {"tnt721.properties.offers": null}}
-        );
-        console.log("Deleted " + result.modifiedCount + " offers");
-
-
-        const to_index = await nftCollection.aggregate([
-            {
-                $match: {
+            const result = await nftCollection.updateMany({
                     "tnt721.properties.offers.itemId": {
-                        $in: item_ids
+                        "$nin": item_ids, $exists: true,
+                        $ne: null
                     }
-                }
-            },
-            {$unwind: "$tnt721.properties.offers"},
-            {
-                $group: {
-                    _id: null,
-                    found: {
-                        "$push": "$tnt721.properties.offers.itemId"
-                    }
-                }
-            },
-            {
-                "$addFields": {
-                    fullList: item_ids
-                }
-            },
-            {
-                "$addFields": {
-                    notfound: {
-                        "$setDifference": [
-                            "$fullList",
-                            "$found"
-                        ]
-                    }
-                }
-            }
-        ]);
+                },
+                {"$set": {"tnt721.properties.offers": null}}
+            );
+            console.log("Deleted " + result.modifiedCount + " offers");
 
-        await Promise.all(offers.map(async (x) => {
-            if (to_index.length === 0 || to_index["0"].notfound.includes(x.itemId.toNumber())) {
-                const nft = await nftCollection.getOrCreate(x.nftContract.toLowerCase(), x.tokenId.toString());
-                // if nft is not valid, do not show
-                if (!nft) {
-                    return;
+            const to_index = await nftCollection.aggregate([
+                {
+                    $match: {
+                        "tnt721.properties.offers.itemId": {
+                            $in: item_ids
+                        }
+                    }
+                },
+                {$unwind: "$tnt721.properties.offers"},
+                {
+                    $group: {
+                        _id: null,
+                        found: {
+                            "$push": "$tnt721.properties.offers.itemId"
+                        }
+                    }
+                },
+                {
+                    "$addFields": {
+                        fullList: item_ids
+                    }
+                },
+                {
+                    "$addFields": {
+                        notfound: {
+                            "$setDifference": [
+                                "$fullList",
+                                "$found"
+                            ]
+                        }
+                    }
                 }
-                return this._addOffers(nft, x.itemId.toString(), x.offerer, x.price.toString());
-            }
-        }));
+            ]);
 
-        console.log(`Done initializing offers`);
+            await Promise.all(offers.map(async (x) => {
+                try {
+                    if (to_index.length === 0 || to_index["0"].notfound.includes(x.itemId.toNumber())) {
+                        const nft = await nftCollection.getOrCreate(x.nftContract.toLowerCase(), x.tokenId.toString());
+                        // if nft is not valid, do not show
+                        if (!nft) {
+                            return;
+                        }
+                        return this._addOffers(nft, x.itemId.toString(), x.offerer, x.price.toString());
+                    }
+                } catch (err) {
+                    console.error("Error processing offer:", err);
+                }
+            }));
+
+            console.log(`Done initializing offers`);
+        } catch (err) {
+            console.error("Error initializing offer structure:", err);
+        }
     }
 
     async _addOffers(nft, itemId, offerer, price) {
-        nft.tnt721.properties.offers = nft.tnt721.properties.offers.filter(x => x.itemId === itemId);
-        nft.tnt721.properties.offers.push({itemId: itemId, offerer: offerer, price: price});
-        return await nft.save();
+        try {
+            nft.tnt721.properties.offers = nft.tnt721.properties.offers.filter(x => x.itemId === itemId);
+            nft.tnt721.properties.offers.push({itemId: itemId, offerer: offerer, price: price});
+            return await nft.save();
+        } catch (err) {
+            console.error("Error adding offers:", err);
+        }
     }
 
     async _indexOffer(itemId, nftContract, tokenId, offerer, offered, price, event) {
-        const nftCollection = this.server.hmongoose.connection.models.nft;
-        const nft = await nftCollection.getOrCreate(nftContract.toLowerCase(), tokenId.toString());
-        return await this._addOffers(nft, itemId.toString(), offerer, price.toString());
+        try {
+            const nftCollection = this.server.hmongoose.connection.models.nft;
+            const nft = await nftCollection.getOrCreate(nftContract.toLowerCase(), tokenId.toString());
+            return await this._addOffers(nft, itemId.toString(), offerer, price.toString());
+        } catch (err) {
+            console.error("Error indexing offer:", err);
+        }
     }
 
     async _removeOffer(itemId, nftContract, tokenId, offerer, offered, price, event) {
-        const nftCollection = this.server.hmongoose.connection.models.nft;
-        const nft = await nftCollection.getOrCreate(nftContract.toLowerCase(), tokenId.toString());
-        nft.tnt721.properties.offers = nft.tnt721.properties.offers.filter(x => x.itemId === itemId);
-        return await nft.save();
+        try {
+            const nftCollection = this.server.hmongoose.connection.models.nft;
+            const nft = await nftCollection.getOrCreate(nftContract.toLowerCase(), tokenId.toString());
+            nft.tnt721.properties.offers = nft.tnt721.properties.offers.filter(x => x.itemId === itemId);
+            return await nft.save();
+        } catch (err) {
+            console.error("Error removing offer:", err);
+        }
     }
 
     async getNFTOfferInfo(contract, tokenId) {
-        const offerInfo = await offerContract.getByNftContractsTokenId(contract, tokenId);
-        return offerInfo.map((x) => {
-            return {itemId: x.itemId.toString(), offerer: x.offerer.toLowerCase(), price: x.price.toString()}
-        })
+        try {
+            const offerInfo = await offerContract.getByNftContractsTokenId(contract, tokenId);
+            return offerInfo.map((x) => {
+                return {itemId: x.itemId.toString(), offerer: x.offerer.toLowerCase(), price: x.price.toString()}
+            });
+        } catch (err) {
+            console.error("Error fetching NFT offer info:", err);
+        }
     }
 }
 

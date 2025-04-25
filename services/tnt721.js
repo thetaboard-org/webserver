@@ -14,171 +14,186 @@ class tnt721 {
     }
 
     async get_info(contract_addr, token_id) {
-        let tnt721;
-        const TNS_contract = "0x7DaEEe00fb89d5c46B8e8387fd9aaC79D6910a06".toLowerCase();
-        const TNS_contract_old = "0xbb4d339a7517c81c32a01221ba51cbd5d3461a94";
-        const isTNS = [TNS_contract, TNS_contract_old].includes(contract_addr.toLowerCase());
-        if (isTNS) {
-            tnt721 = await this._get_tns_info(contract_addr, token_id);
-        } else {
-            tnt721 = await this._get_nft_info(contract_addr, token_id);
+        try {
+            let tnt721;
+            const TNS_contract = "0x7DaEEe00fb89d5c46B8e8387fd9aaC79D6910a06".toLowerCase();
+            const TNS_contract_old = "0xbb4d339a7517c81c32a01221ba51cbd5d3461a94";
+            const isTNS = [TNS_contract, TNS_contract_old].includes(contract_addr.toLowerCase());
+            if (isTNS) {
+                tnt721 = await this._get_tns_info(contract_addr, token_id);
+            } else {
+                tnt721 = await this._get_nft_info(contract_addr, token_id);
+            }
+            tnt721.properties.offers = await this.server.app.offer.getNFTOfferInfo(contract_addr, token_id);
+            tnt721.properties.selling_info = await this.server.app.marketplace.getNFTSellInfo(contract_addr, token_id);
+            return tnt721;
+        } catch (err) {
+            console.error("Error fetching NFT info:", err);
+            return null;
         }
-        tnt721.properties.offers = await this.server.app.offer.getNFTOfferInfo(contract_addr, token_id);
-        tnt721.properties.selling_info = await this.server.app.marketplace.getNFTSellInfo(contract_addr, token_id);
-        return tnt721
     }
 
     async _get_tns_info(contract_addr, token_id) {
-        const sequelize = this.server.plugins["hapi-sequelizejs"].thetaboard;
-
-        const NFT = await sequelize.getModel('NFT').findOne({
-            where: {nftContractId: contract_addr},
-            include: ['Artist']
-        });
-        let artist;
-        if (NFT) {
-            artist = NFT ? NFT.Artist.toJSON().attributes : null;
-            artist["id"] = NFT.Artist.id;
-        }
-
-        let image, description;
-
-        if (contract_addr.toLowerCase() === "0xbb4d339a7517c81c32a01221ba51cbd5d3461a94") {
-            image = "/assets/nft/tns_placeholder_old.png";
-            description = "DEPRECATED: TNS, Theta Name Service domain"
-        } else {
-            image = "/assets/nft/tns_placeholder.png";
-            description = "TNS, Theta Name Service domain"
-        }
-
-        const TNT721 = {
-            "contract_addr": contract_addr.toLowerCase(),
-            "original_token_id": token_id,
-            "image": image,
-            "name": null,
-            "description": description,
-            "properties": {
-                "artist": artist,
-                "drop": null,
-                "assets": [],
-                "selling_info": null,
-                "offers": [],
-            },
-            "attributes": null,
-            "token_id": null,
-        }
         try {
-            const tnsTokenId = await sequelize.getModel('TnsTokenId').findOne({where: {'tokenId': token_id}});
-            TNT721.name = tnsTokenId ? `${tnsTokenId.name}.theta` : token_id;
-            return TNT721;
-        } catch (e) {
-            console.log("Could not fetch TNS");
-            console.error(e);
+            const sequelize = this.server.plugins["hapi-sequelizejs"].thetaboard;
+
+            const NFT = await sequelize.getModel('NFT').findOne({
+                where: {nftContractId: contract_addr},
+                include: ['Artist']
+            });
+            let artist;
+            if (NFT) {
+                artist = NFT ? NFT.Artist.toJSON().attributes : null;
+                artist["id"] = NFT.Artist.id;
+            }
+
+            let image, description;
+
+            if (contract_addr.toLowerCase() === "0xbb4d339a7517c81c32a01221ba51cbd5d3461a94") {
+                image = "/assets/nft/tns_placeholder_old.png";
+                description = "DEPRECATED: TNS, Theta Name Service domain"
+            } else {
+                image = "/assets/nft/tns_placeholder.png";
+                description = "TNS, Theta Name Service domain"
+            }
+
+            const TNT721 = {
+                "contract_addr": contract_addr.toLowerCase(),
+                "original_token_id": token_id,
+                "image": image,
+                "name": null,
+                "description": description,
+                "properties": {
+                    "artist": artist,
+                    "drop": null,
+                    "assets": [],
+                    "selling_info": null,
+                    "offers": [],
+                },
+                "attributes": null,
+                "token_id": null,
+            }
+            try {
+                const tnsTokenId = await sequelize.getModel('TnsTokenId').findOne({where: {'tokenId': token_id}});
+                TNT721.name = tnsTokenId ? `${tnsTokenId.name}.theta` : token_id;
+                return TNT721;
+            } catch (e) {
+                console.log("Could not fetch TNS");
+                console.error(e);
+                return null;
+            }
+        } catch (err) {
+            console.error("Error in _get_tns_info:", err);
             return null;
         }
     }
 
     async _get_nft_info(contract_addr, token_id) {
-        const contract = new ethers.Contract(contract_addr, nft_abi, provider);
-        let token_uri = await contract.tokenURI(token_id);
-        const parsed = new URL(token_uri);
-        const sequelize = this.server.plugins["hapi-sequelizejs"].thetaboard;
-        if (token_uri.includes('thetaboard') && process.env.NODE_ENV === 'development') {
-            token_uri = token_uri.replace('https://nft.thetaboard.io', 'http://localhost:8000')
-        }
-        const TNT721 = {
-            "contract_addr": contract_addr.toLowerCase(),
-            "original_token_id": token_id,
-            "image": null,
-            "name": null,
-            "description": null,
-            "properties": {
-                "artist": null,
-                "drop": null,
-                "assets": [],
-                "selling_info": null,
-                "offers": []
-            },
-            "attributes": null,
-            "token_id": null
-        };
-
-        // if it is an image, then we don't have anything else to fetch
-        const extension = parsed.pathname.split('.').pop();
-        if (IMG_EXTENSIONS.includes(extension)) {
-            TNT721['image'] = token_uri;
-            TNT721['name'] = `${await contract.name()}`;
-        } else {
-            try {
-                if (parsed.protocol === 'ipfs:') {
-                    token_uri = `https://ipfs.io/${token_uri.replace(':/', '')}`
-                }
-                const nft_metadata_api  = await got(token_uri, {
-                    responseType: 'json',
-                    timeout: { request: 500 }
-                });
-                const nft_metadata = nft_metadata_api.body;
-                const image_parsed = new URL(nft_metadata['image']);
-                if (image_parsed.protocol === 'ipfs:') {
-                    nft_metadata['image'] = `https://ipfs.io/${nft_metadata['image'].replace(':/', '')}`
-                }
-                TNT721['image'] = nft_metadata['image'];
-                if (nft_metadata.token_id && !nft_metadata['name'].includes("#")) {
-                    TNT721['name'] = `${nft_metadata['name']} #${nft_metadata.token_id}`;
-                } else {
-                    TNT721['name'] = nft_metadata['name'];
-                }
-                TNT721.description = nft_metadata.description;
-                if (nft_metadata.properties) {
-                    TNT721.properties.artist = nft_metadata.properties.artist;
-                    TNT721.properties.drop = nft_metadata.properties.drop;
-                    TNT721.properties.assets = nft_metadata.properties.assets;
-                }
-                // if we didn't got the artist info form the web, we try to get it from our DB
-                if (!TNT721.properties.artist) {
-                    const NFT = await sequelize.getModel('NFT').findOne({
-                        where: {nftContractId: contract_addr},
-                        include: ['Artist']
-                    });
-                    if (NFT) {
-                        const artist = NFT ? NFT.Artist.toJSON().attributes : null;
-                        artist["id"] = NFT.Artist.id;
-                        TNT721.properties.artist = artist;
-                    }
-                }
-
-                if (nft_metadata.attributes) {
-                    TNT721.attributes = nft_metadata.attributes;
-                }
-                // handle thetadrop unique features....
-                if (nft_metadata.animation_url) {
-                    TNT721.properties.assets = TNT721.properties.assets || [];
-                    TNT721.properties.assets.push({
-                        description: null,
-                        name: null,
-                        type: 'video',
-                        asset: nft_metadata.animation_url
-                    });
-                }
-                if (nft_metadata.token_id) {
-                    TNT721.token_id = nft_metadata.token_id
-                } else if (nft_metadata['name'].includes("#")) {
-                    try {
-                        const number = nft_metadata['name'].split('#');
-                        TNT721.token_id = Number(number[1]);
-                    } catch (e) {
-                        //    couldn't get token id
-                    }
-                }
-            } catch (e) {
-                console.log("Could not fetch NFT");
-                console.log(token_uri)
-                console.error(e);
-                // URL is invalid. Nothing we can do about it...
-                return null;
+        try {
+            const contract = new ethers.Contract(contract_addr, nft_abi, provider);
+            let token_uri = await contract.tokenURI(token_id);
+            const parsed = new URL(token_uri);
+            const sequelize = this.server.plugins["hapi-sequelizejs"].thetaboard;
+            if (token_uri.includes('thetaboard') && process.env.NODE_ENV === 'development') {
+                token_uri = token_uri.replace('https://nft.thetaboard.io', 'http://localhost:8000')
             }
+            const TNT721 = {
+                "contract_addr": contract_addr.toLowerCase(),
+                "original_token_id": token_id,
+                "image": null,
+                "name": null,
+                "description": null,
+                "properties": {
+                    "artist": null,
+                    "drop": null,
+                    "assets": [],
+                    "selling_info": null,
+                    "offers": []
+                },
+                "attributes": null,
+                "token_id": null
+            };
+
+            // if it is an image, then we don't have anything else to fetch
+            const extension = parsed.pathname.split('.').pop();
+            if (IMG_EXTENSIONS.includes(extension)) {
+                TNT721['image'] = token_uri;
+                TNT721['name'] = `${await contract.name()}`;
+            } else {
+                try {
+                    if (parsed.protocol === 'ipfs:') {
+                        token_uri = `https://ipfs.io/${token_uri.replace(':/', '')}`
+                    }
+                    const nft_metadata_api  = await got(token_uri, {
+                        responseType: 'json',
+                        timeout: { request: 500 }
+                    });
+                    const nft_metadata = nft_metadata_api.body;
+                    const image_parsed = new URL(nft_metadata['image']);
+                    if (image_parsed.protocol === 'ipfs:') {
+                        nft_metadata['image'] = `https://ipfs.io/${nft_metadata['image'].replace(':/', '')}`
+                    }
+                    TNT721['image'] = nft_metadata['image'];
+                    if (nft_metadata.token_id && !nft_metadata['name'].includes("#")) {
+                        TNT721['name'] = `${nft_metadata['name']} #${nft_metadata.token_id}`;
+                    } else {
+                        TNT721['name'] = nft_metadata['name'];
+                    }
+                    TNT721.description = nft_metadata.description;
+                    if (nft_metadata.properties) {
+                        TNT721.properties.artist = nft_metadata.properties.artist;
+                        TNT721.properties.drop = nft_metadata.properties.drop;
+                        TNT721.properties.assets = nft_metadata.properties.assets;
+                    }
+                    // if we didn't got the artist info form the web, we try to get it from our DB
+                    if (!TNT721.properties.artist) {
+                        const NFT = await sequelize.getModel('NFT').findOne({
+                            where: {nftContractId: contract_addr},
+                            include: ['Artist']
+                        });
+                        if (NFT) {
+                            const artist = NFT ? NFT.Artist.toJSON().attributes : null;
+                            artist["id"] = NFT.Artist.id;
+                            TNT721.properties.artist = artist;
+                        }
+                    }
+
+                    if (nft_metadata.attributes) {
+                        TNT721.attributes = nft_metadata.attributes;
+                    }
+                    // handle thetadrop unique features....
+                    if (nft_metadata.animation_url) {
+                        TNT721.properties.assets = TNT721.properties.assets || [];
+                        TNT721.properties.assets.push({
+                            description: null,
+                            name: null,
+                            type: 'video',
+                            asset: nft_metadata.animation_url
+                        });
+                    }
+                    if (nft_metadata.token_id) {
+                        TNT721.token_id = nft_metadata.token_id
+                    } else if (nft_metadata['name'].includes("#")) {
+                        try {
+                            const number = nft_metadata['name'].split('#');
+                            TNT721.token_id = Number(number[1]);
+                        } catch (e) {
+                            //    couldn't get token id
+                        }
+                    }
+                } catch (e) {
+                    console.log("Could not fetch NFT");
+                    console.log(token_uri)
+                    console.error(e);
+                    // URL is invalid. Nothing we can do about it...
+                    return null;
+                }
+            }
+            return TNT721;
+        } catch (err) {
+            console.error("Error in _get_nft_info:", err);
+            return null;
         }
-        return TNT721;
     }
 }
 

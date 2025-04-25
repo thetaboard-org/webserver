@@ -201,6 +201,18 @@ const options = {
 const init = async () => {
     const server = await Glue.compose(manifest, options);
 
+    // Log request errors
+    server.events.on('request', (request, event, tags) => {
+        if (tags.error) {
+            console.error(`Request error: ${event.error ? event.error.message : 'unknown'}`, {
+                method: request.method,
+                path: request.path,
+                payload: request.payload,
+                query: request.query,
+                headers: request.headers,
+            });
+        }
+    });
 
     // TODO: these routes probably shouldn't be there
     // deliver assets
@@ -243,11 +255,23 @@ const init = async () => {
         console.log("Initialized services")
     });
 
+    // Handle unhandled promise rejections and exceptions
+    process.on('unhandledRejection', (reason, promise) => {
+        console.error("Unhandled rejection in:", promise);
+        console.error("Unhandled Rejection:", reason);
+    });
 
-    await server.start();
-    console.log('Server running at: %s://%s:%s', server.info.protocol, server.info.address, server.info.port);
+    process.on('uncaughtException', (err) => {
+        console.error("Uncaught Exception:", err);
+    });
 
-
-}
+    try {
+        await server.start();
+        console.log('Server running at: %s://%s:%s', server.info.protocol, server.info.address, server.info.port);
+    } catch (err) {
+        console.error("Error starting server:", err);
+        process.exit(1);
+    }
+};
 
 init();
