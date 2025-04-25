@@ -112,7 +112,7 @@ class tnt721 {
                 if (parsed.protocol === 'ipfs:') {
                     token_uri = `https://ipfs.io/${token_uri.replace(':/', '')}`
                 }
-                const nft_metadata_api = await fetch(token_uri);
+                const nft_metadata_api = await fetch(token_uri, { signal: AbortSignal.timeout(200) });
                 const nft_metadata = await nft_metadata_api.json();
 
                 const image_parsed = new URL(nft_metadata['image']);
