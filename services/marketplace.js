@@ -24,19 +24,20 @@ class Marketplace {
             const server = this.server;
             const nftCollection = server.hmongoose.connection.models.nft;
 
-            let sellingItems;
-            try {
-                sellingItems = await marketplaceContract.fetchSellingItems();
-            } catch (err) {
-                console.error("Error fetching selling items from contract:", err);
-                return;
-            }
 
             try {
                 marketplaceContract.on("MarketItemCreated", this._eventHandler.bind(this));
                 marketplaceContract.on("MarketItemSale", this._eventHandler.bind(this));
             } catch (err) {
                 console.error("Error setting up contract event listeners:", err);
+                return;
+            }
+
+            let sellingItems= [];
+            try {
+                sellingItems = await marketplaceContract.fetchSellingItems();
+            } catch (err) {
+                console.error("Error fetching selling items from contract:", err);
                 return;
             }
 
