@@ -1,6 +1,7 @@
 const {ethers} = require("ethers");
 const nft_abi = require("../abi/nft_abi.json");
 const {URL} = require("url");
+const got = require("got");
 const provider = new ethers.providers.JsonRpcProvider("http://142.44.213.241:18888/rpc");
 const IMG_EXTENSIONS = ["ase", "art", "bmp", "blp", "cd5", "cit", "cpt", "cr2", "cut", "dds", "dib", "djvu", "egt", "exif", "gif", "gpl", "grf", "icns", "ico", "iff", "jng", "jpeg", "jpg", "jfif", "jp2", "jps", "lbm", "max", "miff", "mng", "msp", "nitf", "ota", "pbm", "pc1", "pc2", "pc3", "pcf", "pcx", "pdn", "pgm", "PI1", "PI2", "PI3", "pict", "pct", "pnm", "pns", "ppm", "psb", "psd", "pdd", "psp", "px", "pxm", "pxr", "qfx", "raw", "rle", "sct", "sgi", "rgb", "int", "bw", "tga", "tiff", "tif", "vtf", "xbm", "xcf", "xpm", "3dv", "amf", "ai", "awg", "cgm", "cdr", "cmx", "dxf", "e2d", "egt", "eps", "fs", "gbr", "odg", "svg", "stl", "vrml", "x3d", "sxd", "v2d", "vnd", "wmf", "emf", "art", "xar", "png", "webp", "jxr", "hdp", "wdp", "cur", "ecw", "iff", "lbm", "liff", "nrrd", "pam", "pcx", "pgf", "sgi", "rgb", "rgba", "bw", "int", "inta", "sid", "ras", "sun", "tga"];
 
@@ -112,9 +113,11 @@ class tnt721 {
                 if (parsed.protocol === 'ipfs:') {
                     token_uri = `https://ipfs.io/${token_uri.replace(':/', '')}`
                 }
-                const nft_metadata_api = await fetch(token_uri, { signal: AbortSignal.timeout(200) });
-                const nft_metadata = await nft_metadata_api.json();
-
+                const nft_metadata_api  = await got(token_uri, {
+                    responseType: 'json',
+                    timeout: { request: 500 }
+                });
+                const nft_metadata = nft_metadata_api.body;
                 const image_parsed = new URL(nft_metadata['image']);
                 if (image_parsed.protocol === 'ipfs:') {
                     nft_metadata['image'] = `https://ipfs.io/${nft_metadata['image'].replace(':/', '')}`
@@ -169,6 +172,7 @@ class tnt721 {
                 }
             } catch (e) {
                 console.log("Could not fetch NFT");
+                console.log(token_uri)
                 console.error(e);
                 // URL is invalid. Nothing we can do about it...
                 return null;
